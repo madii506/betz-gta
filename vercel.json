@@ -20,6 +20,12 @@
     },
     "api/holders.js": {
       "maxDuration": 20
+    },
+    "api/news.js": {
+      "maxDuration": 20
+    },
+    "api/wire.js": {
+      "maxDuration": 25
     }
   },
   "headers": [

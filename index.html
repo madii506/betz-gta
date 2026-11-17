@@ -160,7 +160,7 @@ html.term #term{opacity:1;visibility:visible}
 .chart canvas{position:absolute;inset:0;width:100%;height:100%}
 .chart .tf{position:absolute;top:10px;right:12px;display:flex;gap:4px;z-index:2}
 .chart .em{position:absolute;inset:0;display:grid;place-items:center;color:var(--faint);font-size:13px}
-.mkts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px}
+.mkts{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:10px;padding:14px}
 .mk{background:rgba(255,246,242,.05);border:1px solid var(--line);border-radius:3px;padding:14px;display:flex;flex-direction:column;gap:10px;transition:border-color .2s,background .2s}
 .mk.f{border-color:rgba(255,246,242,.6);background:rgba(255,246,242,.09)}
 .mk .q{font-weight:700;font-size:17px;display:flex;gap:8px;align-items:baseline}
@@ -261,6 +261,18 @@ table.ft2 td{padding:7px 10px;text-align:right;font-size:12px}table.ft2 td:first
 .cmd em{font-style:normal;color:var(--faint);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;font-weight:500}
 .cmd:focus-within{border-color:rgba(255,79,166,.6);box-shadow:0 0 0 3px rgba(255,79,166,.12)}
 .bsum{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border-bottom:1px solid var(--line)}.bsum div{background:rgba(18,5,20,.6);padding:14px 16px}.bsum span{display:block;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);font-weight:700}.bsum b{font-family:RB;font-size:26px;font-weight:900}
+/* all markets */
+table.am td{padding:8px 12px;font-size:12px}table.am td.c{cursor:pointer;min-width:118px}table.am td.c:hover{background:rgba(255,246,242,.08)}
+table.am .co{display:flex;gap:10px;align-items:center;font-family:Rubik;font-weight:700;font-size:14px}table.am .co img,table.am .co .ph{width:28px;height:28px;font-size:11px}
+table.am .cl{display:flex;flex-direction:column;gap:4px}table.am .cl .bar{height:5px;width:90px}table.am .cl span{font-size:11px;color:var(--faint)}
+.wi{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:8px 14px;border-bottom:1px solid rgba(255,246,242,.05);font-size:13px;animation:pin .4s}
+.wi img,.wi .ph{width:22px;height:22px;font-size:10px}
+.news a{display:grid;grid-template-columns:1fr auto;gap:12px;padding:11px 0;border-bottom:1px solid rgba(255,246,242,.06);font-size:14px;line-height:1.4}.news a:hover b{text-decoration:underline}.news a span{font-family:JB;font-size:11px;color:var(--faint);white-space:nowrap}
+.news a i{display:block;font-style:normal;font-family:JB;font-size:11px;color:var(--pink);margin-top:3px}
+.hub .wide{grid-column:1/-1}
+.pf{padding:16px}.pf .bsum{margin:-16px -16px 12px}
+.wl{cursor:pointer;text-decoration:underline dotted rgba(255,246,242,.35);text-underline-offset:3px}
+@media (max-width:1400px){.tab{padding:0 10px;font-size:11px}}
 /* palette + share */
 .pal{width:min(560px,100%)}
 .pal input{width:100%;height:56px;padding:0 18px;background:transparent;border:0;border-bottom:1px solid var(--line);color:var(--paper);font:500 17px Rubik;outline:none}
@@ -332,6 +344,7 @@ table.ft2 td{padding:7px 10px;text-align:right;font-size:12px}table.ft2 td:first
     <nav class="tabs" id="tabs">
       <span class="qk"><span>Q</span></span>
       <button class="tab on" data-t="markets">markets <span class="n" id="nCoins">—</span></button>
+      <button class="tab" data-t="all">all markets</button>
       <button class="tab" data-t="movers">movers</button>
       <button class="tab" data-t="map">map</button>
       <button class="tab" data-t="hub">GTA VI hub</button>
@@ -363,9 +376,13 @@ table.ft2 td{padding:7px 10px;text-align:right;font-size:12px}table.ft2 td:first
       </div>
       <div class="box det" id="det"><div class="empty">loading coins…</div></div>
       <div class="box side">
-        <div class="bh">live calls <span class="sp"></span><small id="nRecent"></small></div>
+        <div class="bh"><button class="chip on" data-side2="calls">live calls</button><button class="chip" data-side2="wire">the wire</button><span class="sp"></span><small id="nRecent"></small></div>
+        <div class="scroll feed" id="wire" hidden></div>
         <div class="scroll feed" id="feed"><div class="empty">no calls yet. the first one lands here.</div></div>
       </div>
+    </div>
+    <div class="pane" data-p="all">
+      <div class="box" style="flex:1"><div class="bh">every market <span class="sp"></span><small>every GTA coin × 5 markets · crowd YES share · click a cell to call it</small></div><div class="scroll" id="allm"></div></div>
     </div>
     <div class="pane" data-p="movers">
       <div class="box" style="flex:1"><div class="bh">movers <span class="sp"></span><small>every GTA coin, sorted six ways, live</small></div><div class="scroll"><div class="movers" id="movers"></div></div></div>
@@ -398,7 +415,7 @@ table.ft2 td{padding:7px 10px;text-align:right;font-size:12px}table.ft2 td:first
       <div class="box" style="flex:1"><div class="scroll">
         <div class="how">
           <div class="step"><b>01</b><h4>pick a GTA coin</h4><p>Every GTA coin on pump.fun and Solana with a real market, pulled live from Jupiter: market cap, volume, holders, chart.</p></div>
-          <div class="step"><b>02</b><h4>make the call</h4><p>Three markets on every coin: higher in 24h, 2x in 24h, or halves in 24h. Hit YES or NO.</p></div>
+          <div class="step"><b>02</b><h4>make the call</h4><p>Five markets on every coin: higher, +50%, 2x, 10x, or halves in 24h. Hit YES or NO.</p></div>
           <div class="step"><b>03</b><h4>sign, free</h4><p>Your wallet signs a short message. No transaction, no SOL, no approvals. We store the call with the coin's market cap at that second.</p></div>
           <div class="step"><b>04</b><h4>get graded</h4><p>24 hours later the call is graded against the coin's live market cap from Jupiter. Wins climb the leaderboard.</p></div>
         </div>
@@ -419,6 +436,7 @@ table.ft2 td{padding:7px 10px;text-align:right;font-size:12px}table.ft2 td:first
 
 <div class="modal" id="mWal"><div class="mbox"><div class="bh">connect a wallet <span class="sp"></span><button data-x>✕</button></div><div id="wList"></div><p class="mnote">betz only asks your wallet to sign a message when you make a call. It never asks for a transaction.</p></div></div>
 <div class="modal" id="mCall"><div class="mbox"><div class="bh">your bet slip <span class="sp"></span><button data-x>✕</button></div><div class="slip" id="slip"></div><p class="mnote" id="slipN">Your wallet will ask you to sign this. Free: no transaction, no SOL.</p><div class="mact"><button class="btn o" data-x>cancel</button><button class="btn w" id="sign">sign the call</button></div></div></div>
+<div class="modal" id="mProf"><div class="mbox" style="width:min(560px,100%)"><div class="bh">caller <span class="sp"></span><button data-x>✕</button></div><div id="prof"></div></div></div>
 <div class="modal" id="mPal"><div class="mbox pal"><input id="palq" placeholder="jump to a coin, a tab, or paste a contract" autocomplete="off"><div id="palr"></div></div></div>
 <div class="modal" id="mShare"><div class="mbox"><div class="bh">call locked <span class="sp"></span><button data-x>✕</button></div><canvas id="card" width="1200" height="675"></canvas><div class="mact"><button class="btn o" id="dl">save image</button><a class="btn w" id="tw" target="_blank" rel="noopener">post on X</a></div></div></div>
 <div id="toast"></div>
