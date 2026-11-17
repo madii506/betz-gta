@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>betz · prediction markets for every GTA coin</title>
+<title>BETZ</title>
 <meta name="description" content="Call every GTA coin on pump.fun: higher in 24h, 2x, or halves. Free, signed with your wallet, graded from on-chain data. Plus live GTA VI markets from Polymarket.">
 <meta property="og:title" content="betz">
 <meta property="og:description" content="prediction markets for every GTA coin">
-<meta property="og:image" content="https://betz-gta.vercel.app/assets/og.png">
+<meta property="og:image" content="https://betz-gtasss.vercel.app/assets/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
 <link rel="modulepreload" href="/assets/three.module.min.js">
@@ -32,31 +32,22 @@ html.term .grain{background:radial-gradient(120% 90% at 85% 0%,rgba(255,120,150,
 /* ---------------------------------------------------------------- loading screen */
 #load{position:fixed;inset:0;z-index:50;background:#0d030b;display:grid;place-items:center;transition:opacity .9s ease,visibility .9s}
 #load.out{opacity:0;visibility:hidden}
-#load .lm{width:min(34vw,190px);height:auto}
-#load .lm .body{transform-origin:50% 50%;animation:lbody 1.2s cubic-bezier(.2,.8,.2,1) both}
-#load .lm .wedge{animation:lwedge 1.4s .5s cubic-bezier(.2,1.4,.3,1) both}
-@keyframes lbody{from{opacity:0;transform:scale(.6) rotate(-90deg)}to{opacity:1;transform:none}}
-@keyframes lwedge{from{opacity:0;transform:translate(-14px,14px)}to{opacity:1;transform:none}}
-#load .lb{position:absolute;right:max(28px,4vw);bottom:max(26px,5vh);display:flex;align-items:center;gap:14px;font-weight:700;font-size:13px;letter-spacing:.14em;text-transform:uppercase}
-#load .spin{width:18px;height:18px;border:3px solid rgba(255,246,242,.2);border-top-color:var(--paper);border-radius:50%;animation:spin .8s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-#load .tip{position:absolute;left:max(28px,4vw);bottom:max(26px,5vh);max-width:min(560px,60vw);font-size:14px;color:var(--dim);line-height:1.5}
-#load .tip b{color:var(--paper);font-weight:700;margin-right:8px;letter-spacing:.12em;font-size:12px}
-#lbar{position:absolute;left:0;bottom:0;height:3px;background:var(--paper);width:0;transition:width .4s ease}
-
+#lbar{position:absolute;left:50%;top:50%;width:0;max-width:240px;height:2px;background:var(--paper);transform:translateX(-50%);transition:width .5s ease;box-shadow:0 0 18px rgba(255,79,166,.8)}
 /* ---------------------------------------------------------------- home */
-#home{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;justify-content:center;padding:0 max(28px,7vw);pointer-events:none;transition:opacity .7s ease,transform .9s cubic-bezier(.2,.8,.2,1)}
+#home{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:0 20px;pointer-events:none;transition:opacity .7s ease,transform .9s cubic-bezier(.2,.8,.2,1)}
 html.term #home{opacity:0;transform:translateX(-40px)}
 #home>*{pointer-events:auto}
-.hero{max-width:640px}
+.hero{display:flex;flex-direction:column;align-items:center;position:relative}.hero:before{content:'';position:absolute;inset:-18vh -16vw;background:radial-gradient(closest-side,rgba(24,4,22,.42),transparent);z-index:-1;pointer-events:none}
+.eyebrow{font-weight:700;font-size:clamp(12px,1.1vw,15px);letter-spacing:.32em;text-transform:uppercase;padding:9px 16px;border:1px solid rgba(255,246,242,.35);border-radius:3px;background:rgba(22,7,24,.35);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);opacity:0;transform:translateY(-14px);transition:all 1s cubic-bezier(.2,.8,.2,1)}
+html.go .eyebrow{opacity:1;transform:none}
 .hero .hmk{width:clamp(64px,8vw,104px);height:auto;filter:drop-shadow(0 10px 24px rgba(20,4,18,.45));opacity:0;transform:translateY(16px);transition:all .9s cubic-bezier(.2,.8,.2,1)}
-.hero h1{font-family:RB,Rubik;font-weight:900;font-size:clamp(84px,13vw,188px);line-height:.86;letter-spacing:-.02em;margin:14px 0 10px -.04em;text-shadow:0 14px 40px rgba(30,4,26,.45);opacity:0;transform:translateY(24px);transition:all 1s .12s cubic-bezier(.2,.8,.2,1)}
+.hero h1{font-family:RB,Rubik;font-weight:900;font-size:clamp(110px,19vw,300px);line-height:.84;letter-spacing:-.025em;margin:18px 0 8px;text-shadow:0 14px 40px rgba(30,4,26,.45);opacity:0;transform:translateY(24px);transition:all 1s .12s cubic-bezier(.2,.8,.2,1)}
 .hero h1 span{display:inline-block;animation:bob 4.8s ease-in-out infinite}
 .hero h1 span:nth-child(2){animation-delay:.15s}.hero h1 span:nth-child(3){animation-delay:.3s}.hero h1 span:nth-child(4){animation-delay:.45s}
 @keyframes bob{0%,100%{transform:none}8%{transform:translateY(-10px) rotate(-2deg)}16%{transform:none}}
 .hero p{font-size:clamp(17px,1.8vw,24px);font-weight:500;color:var(--paper);opacity:0;transform:translateY(20px);transition:all 1s .24s cubic-bezier(.2,.8,.2,1);text-shadow:0 4px 18px rgba(30,4,26,.55)}
 .hero p b{font-weight:700}
-.cta{display:flex;gap:12px;margin-top:30px;flex-wrap:wrap;opacity:0;transform:translateY(20px);transition:all 1s .36s cubic-bezier(.2,.8,.2,1)}
+.cta{display:flex;gap:12px;margin-top:26px;flex-wrap:wrap;justify-content:center;opacity:0;transform:translateY(20px);transition:all 1s .36s cubic-bezier(.2,.8,.2,1)}
 html.go .hero .hmk,html.go .hero h1,html.go .hero p,html.go .cta{opacity:1;transform:none}
 .btn{height:52px;padding:0 24px;display:inline-flex;align-items:center;gap:12px;font-weight:700;font-size:14px;letter-spacing:.14em;text-transform:uppercase;border-radius:3px;transition:transform .2s,background .2s,box-shadow .2s}
 .btn.w{background:var(--paper);color:var(--ink);box-shadow:0 10px 30px rgba(20,4,18,.35)}
@@ -90,8 +81,9 @@ html.term #term{opacity:1;visibility:visible}
 .tabs{display:flex;align-items:stretch;gap:4px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
 .tabs .qk{display:flex;align-items:center;padding:0 8px;font-family:JB;font-size:11px;color:var(--dim)}
+@media (max-width:1500px){.tabs .qk{display:none}.brand{font-size:26px}}
 .tabs .qk span{border:1.5px solid var(--faint);border-radius:3px;padding:2px 6px}
-.tab{height:42px;padding:0 18px;display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;letter-spacing:.14em;text-transform:uppercase;background:rgba(18,5,20,.55);border-top:3px solid transparent;white-space:nowrap;transition:background .2s,color .2s}
+.tab{height:42px;padding:0 13px;display:flex;align-items:center;gap:7px;font-weight:700;font-size:12px;letter-spacing:.1em;text-transform:uppercase;background:rgba(18,5,20,.55);border-top:3px solid transparent;white-space:nowrap;transition:background .2s,color .2s}
 .tab:hover{background:rgba(255,246,242,.12)}
 .tab.on{background:var(--sel);color:var(--ink);border-top-color:var(--pink)}
 .tab .n{font-family:JB;font-size:10px;padding:1px 6px;border-radius:9px;background:rgba(255,246,242,.16)}
@@ -205,6 +197,44 @@ td.rk{font-family:RB;font-weight:900;font-size:18px;width:60px}
 .faq h5{font-size:15px;margin-bottom:6px}
 .faq p{font-size:14px;color:var(--dim);line-height:1.55}
 .fine{padding:0 22px 26px;font-size:12px;color:var(--faint);line-height:1.6}
+/* movers */
+.movers{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:12px}
+.mv{background:rgba(255,246,242,.05);border:1px solid var(--line);border-radius:3px;display:flex;flex-direction:column}
+.mv h4{font-size:11px;letter-spacing:.16em;text-transform:uppercase;padding:12px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between}
+.mv h4 span{font-family:JB;letter-spacing:0;color:var(--faint);font-weight:500;text-transform:none}
+.mv .r{display:grid;grid-template-columns:20px 30px 1fr auto;gap:10px;align-items:center;padding:8px 14px;cursor:pointer;font-size:14px}
+.mv .r:hover{background:rgba(255,246,242,.07)}
+.mv .r img,.mv .r .ph{width:30px;height:30px;font-size:12px}
+.mv .r i{font-style:normal;font-family:JB;color:var(--faint);font-size:11px}
+.mv .r b{font-family:JB;font-size:13px}
+/* map */
+.mapw{position:relative;flex:1;min-height:0;background:radial-gradient(circle at 50% 50%,rgba(25,211,197,.06),transparent 60%)}
+.mapw canvas{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair}
+.mtip{position:absolute;pointer-events:none;background:rgba(20,6,18,.94);border:1px solid var(--line);border-radius:3px;padding:8px 10px;font-size:12px;font-family:JB;display:none;white-space:nowrap}
+/* hub */
+.hub{padding:16px;display:grid;grid-template-columns:1.2fr 1fr;gap:10px}
+.hc{background:rgba(255,246,242,.05);border:1px solid var(--line);border-radius:3px;padding:18px}
+.hc h4{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin-bottom:10px}
+.big{font-family:RB;font-weight:900;font-size:clamp(40px,5.4vw,84px);line-height:1}
+.big small{font-family:Rubik;font-size:14px;font-weight:700;letter-spacing:.14em;color:var(--dim);margin-left:4px}
+.kv{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);margin-top:14px}
+.kv div{background:rgba(18,5,20,.7);padding:12px}.kv span{display:block;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);font-weight:700}.kv b{font-family:JB;font-size:16px}
+.sent .r{display:grid;grid-template-columns:1fr 120px 50px;gap:10px;align-items:center;padding:7px 0;font-size:14px;cursor:pointer}
+/* coin extras */
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px;padding:0 14px 14px}
+.two .box{background:rgba(255,246,242,.04)}
+.tr{display:grid;grid-template-columns:44px 1fr auto auto;gap:10px;padding:7px 14px;font-family:JB;font-size:12px;border-bottom:1px solid rgba(255,246,242,.05)}
+.tr a:hover{text-decoration:underline}
+.hd{display:grid;grid-template-columns:22px 1fr 60px;gap:10px;align-items:center;padding:6px 14px;font-family:JB;font-size:12px}
+.hd .hb{height:6px;background:rgba(255,246,242,.1);border-radius:3px;overflow:hidden;grid-column:2/4}.hd .hb i{display:block;height:100%;background:var(--pink)}
+.risk{font-family:JB;font-size:11px;padding:3px 8px;border-radius:3px}
+/* palette + share */
+.pal{width:min(560px,100%)}
+.pal input{width:100%;height:56px;padding:0 18px;background:transparent;border:0;border-bottom:1px solid var(--line);color:var(--paper);font:500 17px Rubik;outline:none}
+#palr .pr{display:flex;gap:12px;align-items:center;padding:11px 18px;cursor:pointer;font-size:14px}
+#palr .pr.on,#palr .pr:hover{background:var(--paper);color:var(--ink)}
+#palr .pr span{margin-left:auto;font-family:JB;font-size:11px;opacity:.6}
+#card{width:100%;height:auto;display:block}
 /* modal + toast */
 .modal{position:fixed;inset:0;z-index:40;background:rgba(10,2,10,.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;place-items:center;padding:20px}
 .modal.on{display:grid;animation:pin .3s}
@@ -225,6 +255,8 @@ td.rk{font-family:RB;font-weight:900;font-size:18px;width:60px}
 #toast.err{background:var(--no);color:#2a050a}
 /* phone */
 @media (max-width:860px){
+  .movers{grid-template-columns:1fr}.hub{grid-template-columns:1fr}.two{grid-template-columns:1fr}.mapw{height:60vh;flex:none}
+  .hero:before{inset:-12vh -10vw}
   .th{flex-wrap:wrap;gap:10px;padding-top:12px}.brand{font-size:24px}.brand svg{width:28px;height:28px}
   .tabs{order:3;flex:1 1 100%}.tabs .qk{display:none}.tab{height:38px;padding:0 12px;font-size:11px}
   .wal{margin-left:auto;height:36px;font-size:11px}
@@ -241,26 +273,18 @@ td.rk{font-family:RB;font-weight:900;font-size:18px;width:60px}
 <canvas id="bg"></canvas>
 <div class="grain"></div>
 
-<div id="load">
-  <svg class="lm" viewBox="0 0 200 200" aria-label="betz"><path class="body" fill="#fff6f2" d=""/><path class="wedge" fill="#fff6f2" d=""/></svg>
-  <div class="tip"><b>TIP</b><span id="tipT">Every call is free. You sign a message, nothing is sent on-chain.</span></div>
-  <div class="lb"><span id="lbT">loading the street</span><i class="spin"></i></div>
-  <div id="lbar"></div>
-</div>
+<div id="load"><div id="lbar"></div></div>
 
 <section id="home">
   <div class="hero">
-    <svg class="hmk" viewBox="0 0 200 200"><path class="body" fill="#fff6f2" d=""/><path class="wedge" fill="#fff6f2" d=""/></svg>
+    <div class="eyebrow">prediction markets for every GTA coin</div>
     <h1><span>b</span><span>e</span><span>t</span><span>z</span></h1>
-    <p>prediction markets for every <b>GTA coin</b></p>
     <div class="cta">
       <button class="btn w" id="enter">enter terminal <span class="k">↵</span></button>
       <button class="btn o" id="hconn"><i class="dot"></i><span>connect wallet</span></button>
     </div>
   </div>
 </section>
-<div class="cd" id="cd"><i></i><span>GTA VI</span><span class="mono" id="cdT">—</span></div>
-<div class="tape" id="tape"><div class="run" id="tapeR"></div></div>
 
 <section id="term">
   <div class="th">
@@ -268,6 +292,9 @@ td.rk{font-family:RB;font-weight:900;font-size:18px;width:60px}
     <nav class="tabs" id="tabs">
       <span class="qk"><span>Q</span></span>
       <button class="tab on" data-t="markets">markets <span class="n" id="nCoins">—</span></button>
+      <button class="tab" data-t="movers">movers</button>
+      <button class="tab" data-t="map">map</button>
+      <button class="tab" data-t="hub">GTA VI hub</button>
       <button class="tab" data-t="poly">polymarket <span class="n" id="nPoly">—</span></button>
       <button class="tab" data-t="board">leaderboard</button>
       <button class="tab" data-t="mine">my calls <span class="n" id="nMine">0</span></button>
@@ -299,6 +326,15 @@ td.rk{font-family:RB;font-weight:900;font-size:18px;width:60px}
         <div class="bh">live calls <span class="sp"></span><small id="nRecent"></small></div>
         <div class="scroll feed" id="feed"><div class="empty">no calls yet. the first one lands here.</div></div>
       </div>
+    </div>
+    <div class="pane" data-p="movers">
+      <div class="box" style="flex:1"><div class="bh">movers <span class="sp"></span><small>every GTA coin, sorted six ways, live</small></div><div class="scroll"><div class="movers" id="movers"></div></div></div>
+    </div>
+    <div class="pane" data-p="map">
+      <div class="box" style="flex:1"><div class="bh">the map <span class="sp"></span><small>across: market cap · up: 24h change · size: volume · click a blip to open it</small></div><div class="mapw" id="mapw"><canvas id="mapc"></canvas><div class="mtip" id="mtip"></div></div></div>
+    </div>
+    <div class="pane" data-p="hub">
+      <div class="box" style="flex:1"><div class="scroll"><div class="hub" id="hub"></div></div></div>
     </div>
     <div class="pane" data-p="poly">
       <div class="box" style="flex:1">
@@ -338,11 +374,13 @@ td.rk{font-family:RB;font-weight:900;font-size:18px;width:60px}
       </div></div>
     </div>
   </div>
-  <div class="foot"><span class="l" id="footL">data: Jupiter · GeckoTerminal · Polymarket</span><span><kbd>Q</kbd><kbd>E</kbd>tabs</span><span><kbd>↑</kbd><kbd>↓</kbd>coin</span><span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd>market</span><span><kbd>Y</kbd><kbd>N</kbd>call</span><span><kbd>ESC</kbd>street</span></div>
+  <div class="foot"><span class="l" id="footL">data: Jupiter · GeckoTerminal · Solana RPC · Polymarket</span><span><kbd>⌘K</kbd>search</span><span><kbd>Q</kbd><kbd>E</kbd>tabs</span><span><kbd>↑</kbd><kbd>↓</kbd>coin</span><span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd>market</span><span><kbd>Y</kbd><kbd>N</kbd>call</span><span><kbd>ESC</kbd>street</span></div>
 </section>
 
 <div class="modal" id="mWal"><div class="mbox"><div class="bh">connect a wallet <span class="sp"></span><button data-x>✕</button></div><div id="wList"></div><p class="mnote">betz only asks your wallet to sign a message when you make a call. It never asks for a transaction.</p></div></div>
 <div class="modal" id="mCall"><div class="mbox"><div class="bh">your bet slip <span class="sp"></span><button data-x>✕</button></div><div class="slip" id="slip"></div><p class="mnote" id="slipN">Your wallet will ask you to sign this. Free: no transaction, no SOL.</p><div class="mact"><button class="btn o" data-x>cancel</button><button class="btn w" id="sign">sign the call</button></div></div></div>
+<div class="modal" id="mPal"><div class="mbox pal"><input id="palq" placeholder="jump to a coin, a tab, or paste a contract" autocomplete="off"><div id="palr"></div></div></div>
+<div class="modal" id="mShare"><div class="mbox"><div class="bh">call locked <span class="sp"></span><button data-x>✕</button></div><canvas id="card" width="1200" height="675"></canvas><div class="mact"><button class="btn o" id="dl">save image</button><a class="btn w" id="tw" target="_blank" rel="noopener">post on X</a></div></div></div>
 <div id="toast"></div>
 
 <script type="module" src="/assets/app.js"></script>
