@@ -41,13 +41,25 @@ html.term #home{opacity:0;transform:translateX(-40px)}
 .eyebrow{font-weight:700;font-size:clamp(12px,1.1vw,15px);letter-spacing:.32em;text-transform:uppercase;padding:9px 16px;border:1px solid rgba(255,246,242,.35);border-radius:3px;background:rgba(22,7,24,.35);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);opacity:0;transform:translateY(-14px);transition:all 1s cubic-bezier(.2,.8,.2,1)}
 html.go .eyebrow{opacity:1;transform:none}
 .hero .hmk{width:clamp(64px,8vw,104px);height:auto;filter:drop-shadow(0 10px 24px rgba(20,4,18,.45));opacity:0;transform:translateY(16px);transition:all .9s cubic-bezier(.2,.8,.2,1)}
-.hero h1{font-family:RB,Rubik;font-weight:900;font-size:clamp(110px,19vw,300px);line-height:.84;letter-spacing:-.025em;margin:18px 0 8px;text-shadow:0 14px 40px rgba(30,4,26,.45);opacity:0;transform:translateY(24px);transition:all 1s .12s cubic-bezier(.2,.8,.2,1)}
-.hero h1 span{display:inline-block;animation:bob 4.8s ease-in-out infinite}
+.hero h1{font-family:RB,Rubik;font-weight:900;font-size:clamp(110px,18vw,280px);line-height:.84;letter-spacing:-.025em;margin:0 0 18px;text-shadow:0 14px 40px rgba(30,4,26,.45);opacity:0;transform:translateY(24px);transition:all 1s .12s cubic-bezier(.2,.8,.2,1)}
+.hero h1 span{display:inline-block;animation:bob 4.8s ease-in-out infinite,drop .9s cubic-bezier(.2,1.3,.3,1) both}
+.hero h1 span:nth-child(1){animation-delay:0s,.05s}.hero h1 span:nth-child(2){animation-delay:.15s,.13s}.hero h1 span:nth-child(3){animation-delay:.3s,.21s}.hero h1 span:nth-child(4){animation-delay:.45s,.29s}
+@keyframes drop{from{opacity:0;transform:translateY(-60px) rotate(-8deg) scale(1.15)}to{opacity:1;transform:none}}
+html:not(.go) .hero h1 span{animation-play-state:paused}
+.feats{display:flex;gap:8px;margin-top:6px;opacity:0;transform:translateY(18px);transition:all 1s .3s cubic-bezier(.2,.8,.2,1)}
+html.go .feats{opacity:1;transform:none}
+.ft{width:190px;text-align:left;padding:13px 14px 14px;background:rgba(22,7,24,.5);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,246,242,.16);border-top:3px solid var(--pink);border-radius:3px;display:flex;flex-direction:column;gap:4px;transition:transform .25s,background .25s}
+.ft:hover{transform:translateY(-4px);background:rgba(22,7,24,.7)}
+.ft b{font-family:JB;font-size:11px;color:var(--pink);letter-spacing:.05em}
+.ft strong{font-size:15px;font-weight:700;letter-spacing:.01em}
+.ft i{font-style:normal;font-size:12.5px;color:var(--dim);line-height:1.4}
+.ft em{font-style:normal;color:var(--paper);font-weight:700}
+.ft:nth-child(2){border-top-color:var(--teal)}.ft:nth-child(3){border-top-color:var(--gold)}.ft:nth-child(4){border-top-color:var(--yes)}.ft:nth-child(5){border-top-color:var(--paper)}
 .hero h1 span:nth-child(2){animation-delay:.15s}.hero h1 span:nth-child(3){animation-delay:.3s}.hero h1 span:nth-child(4){animation-delay:.45s}
 @keyframes bob{0%,100%{transform:none}8%{transform:translateY(-10px) rotate(-2deg)}16%{transform:none}}
 .hero p{font-size:clamp(17px,1.8vw,24px);font-weight:500;color:var(--paper);opacity:0;transform:translateY(20px);transition:all 1s .24s cubic-bezier(.2,.8,.2,1);text-shadow:0 4px 18px rgba(30,4,26,.55)}
 .hero p b{font-weight:700}
-.cta{display:flex;gap:12px;margin-top:26px;flex-wrap:wrap;justify-content:center;opacity:0;transform:translateY(20px);transition:all 1s .36s cubic-bezier(.2,.8,.2,1)}
+.cta{display:flex;gap:12px;margin-top:22px;flex-wrap:wrap;justify-content:center;opacity:0;transform:translateY(20px);transition:all 1s .36s cubic-bezier(.2,.8,.2,1)}
 html.go .hero .hmk,html.go .hero h1,html.go .hero p,html.go .cta{opacity:1;transform:none}
 .btn{height:52px;padding:0 24px;display:inline-flex;align-items:center;gap:12px;font-weight:700;font-size:14px;letter-spacing:.14em;text-transform:uppercase;border-radius:3px;transition:transform .2s,background .2s,box-shadow .2s}
 .btn.w{background:var(--paper);color:var(--ink);box-shadow:0 10px 30px rgba(20,4,18,.35)}
@@ -81,6 +93,7 @@ html.term #term{opacity:1;visibility:visible}
 .tabs{display:flex;align-items:stretch;gap:4px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
 .tabs .qk{display:flex;align-items:center;padding:0 8px;font-family:JB;font-size:11px;color:var(--dim)}
+@media (max-width:1100px) and (min-width:861px){.ft{width:160px}}
 @media (max-width:1500px){.tabs .qk{display:none}.brand{font-size:26px}}
 .tabs .qk span{border:1.5px solid var(--faint);border-radius:3px;padding:2px 6px}
 .tab{height:42px;padding:0 13px;display:flex;align-items:center;gap:7px;font-weight:700;font-size:12px;letter-spacing:.1em;text-transform:uppercase;background:rgba(18,5,20,.55);border-top:3px solid transparent;white-space:nowrap;transition:background .2s,color .2s}
@@ -162,7 +175,7 @@ html.term #term{opacity:1;visibility:visible}
 .yn button:hover{transform:translateY(-2px);filter:brightness(1.08)}
 .yn button:disabled{opacity:.35;cursor:not-allowed;transform:none}
 .mine{font-family:JB;font-size:11px;padding:7px 9px;border-radius:3px;background:rgba(255,246,242,.08)}
-.feed .fi{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:9px 16px;border-bottom:1px solid rgba(255,246,242,.06);font-size:13px}
+.fi{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:9px 16px;border-bottom:1px solid rgba(255,246,242,.06);font-size:13px}
 .pill{font-family:JB;font-size:10px;font-weight:700;padding:3px 7px;border-radius:3px;letter-spacing:.06em}
 .pill.Y{background:rgba(47,224,168,.18);color:var(--yes)}.pill.N{background:rgba(255,90,106,.18);color:var(--no)}
 .pill.won{background:var(--yes);color:#04281e}.pill.lost{background:var(--no);color:#33060c}.pill.open{background:rgba(255,246,242,.14)}.pill.grading{background:rgba(255,198,90,.2);color:var(--gold)}
@@ -228,6 +241,26 @@ td.rk{font-family:RB;font-weight:900;font-size:18px;width:60px}
 .hd{display:grid;grid-template-columns:22px 1fr 60px;gap:10px;align-items:center;padding:6px 14px;font-family:JB;font-size:12px}
 .hd .hb{height:6px;background:rgba(255,246,242,.1);border-radius:3px;overflow:hidden;grid-column:2/4}.hd .hb i{display:block;height:100%;background:var(--pink)}
 .risk{font-family:JB;font-size:11px;padding:3px 8px;border-radius:3px}
+/* coin extras 2 */
+table.ft2{font-size:12px}table.ft2 th{position:static;background:none;padding:8px 10px;text-align:right}table.ft2 th:first-child{text-align:left}
+table.ft2 td{padding:7px 10px;text-align:right;font-size:12px}table.ft2 td:first-child{text-align:left;font-family:Rubik;color:var(--dim);font-size:12px}
+.bs{height:6px;border-radius:3px;background:var(--no);overflow:hidden;width:70px;margin-left:auto}.bs i{display:block;height:100%;background:var(--yes)}
+.sfs{padding:6px 0}.sf{display:grid;grid-template-columns:26px 1fr auto;gap:10px;align-items:center;padding:7px 14px;font-size:13px;border-bottom:1px solid rgba(255,246,242,.05)}
+.sf i{font-style:normal;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-weight:900;font-size:12px}.sf i.ok{background:rgba(47,224,168,.18);color:var(--yes)}.sf i.no{background:rgba(255,90,106,.2);color:var(--no)}.sf i.q{background:rgba(255,246,242,.1);color:var(--dim)}
+.sf b{font-family:JB;font-size:12px}
+.calc{padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.calc label{display:flex;flex-direction:column;gap:6px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);font-weight:700;position:relative}
+.calc label span{position:absolute;left:10px;bottom:10px;color:var(--dim);font-family:JB;font-size:14px;letter-spacing:0}
+.calc input{height:40px;padding:0 10px 0 24px;background:rgba(0,0,0,.28);border:1px solid var(--line);border-radius:3px;color:var(--paper);font:600 15px JB;outline:none}
+#cOut{grid-column:1/-1;display:flex;align-items:baseline;gap:12px;padding:6px 0}#cOut b{font-family:RB;font-weight:900;font-size:34px}#cOut span{font-family:JB;font-size:12px;color:var(--dim)}
+.presets{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap}
+.stw{color:var(--gold)}
+.cmd{display:flex;align-items:center;gap:8px;margin-right:auto;flex:1;max-width:640px;height:32px;padding:0 10px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:3px;font-family:JB;text-transform:none;letter-spacing:0}
+.cmd span{color:var(--pink);font-weight:700;font-size:12px}
+.cmd input{flex:0 1 260px;min-width:120px;background:none;border:0;outline:none;color:var(--paper);font:500 12px JB}
+.cmd em{font-style:normal;color:var(--faint);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;font-weight:500}
+.cmd:focus-within{border-color:rgba(255,79,166,.6);box-shadow:0 0 0 3px rgba(255,79,166,.12)}
+.bsum{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border-bottom:1px solid var(--line)}.bsum div{background:rgba(18,5,20,.6);padding:14px 16px}.bsum span{display:block;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);font-weight:700}.bsum b{font-family:RB;font-size:26px;font-weight:900}
 /* palette + share */
 .pal{width:min(560px,100%)}
 .pal input{width:100%;height:56px;padding:0 18px;background:transparent;border:0;border-bottom:1px solid var(--line);color:var(--paper);font:500 17px Rubik;outline:none}
@@ -255,6 +288,7 @@ td.rk{font-family:RB;font-weight:900;font-size:18px;width:60px}
 #toast.err{background:var(--no);color:#2a050a}
 /* phone */
 @media (max-width:860px){
+  .feats{display:grid;grid-template-columns:1fr 1fr;width:min(420px,92vw)}.ft{width:auto;padding:10px 11px}.ft:nth-child(5){grid-column:1/-1}.ft strong{font-size:13px}.ft i{font-size:11.5px}
   .movers{grid-template-columns:1fr}.hub{grid-template-columns:1fr}.two{grid-template-columns:1fr}.mapw{height:60vh;flex:none}
   .hero:before{inset:-12vh -10vw}
   .th{flex-wrap:wrap;gap:10px;padding-top:12px}.brand{font-size:24px}.brand svg{width:28px;height:28px}
@@ -277,8 +311,14 @@ td.rk{font-family:RB;font-weight:900;font-size:18px;width:60px}
 
 <section id="home">
   <div class="hero">
-    <div class="eyebrow">prediction markets for every GTA coin</div>
     <h1><span>b</span><span>e</span><span>t</span><span>z</span></h1>
+    <div class="feats">
+      <div class="ft"><b>01</b><strong>call any GTA coin</strong><i>YES or NO on <em id="fCoins">every</em> live coin</i></div>
+      <div class="ft"><b>02</b><strong>free to play</strong><i>sign a message. no SOL, no tx</i></div>
+      <div class="ft"><b>03</b><strong>graded on-chain</strong><i>24h later, from live market cap</i></div>
+      <div class="ft"><b>04</b><strong>GTA VI odds</strong><i><em id="fPm">live</em> Polymarket markets</i></div>
+      <div class="ft"><b>05</b><strong>top the board</strong><i>every correct call climbs</i></div>
+    </div>
     <div class="cta">
       <button class="btn w" id="enter">enter terminal <span class="k">↵</span></button>
       <button class="btn o" id="hconn"><i class="dot"></i><span>connect wallet</span></button>
@@ -317,7 +357,7 @@ td.rk{font-family:RB;font-weight:900;font-size:18px;width:60px}
         <div class="bh">GTA coins <span class="sp"></span><small id="upd">live</small></div>
         <div class="tools">
           <input id="q" placeholder="search name, ticker or contract" autocomplete="off">
-          <button class="chip on" data-s="mcap">mcap</button><button class="chip" data-s="ch24h">24h</button><button class="chip" data-s="vol24h">volume</button><button class="chip" data-s="new">new</button><button class="chip" data-s="called">called</button>
+          <button class="chip on" data-s="mcap">mcap</button><button class="chip" data-s="ch24h">24h</button><button class="chip" data-s="vol24h">volume</button><button class="chip" data-s="new">new</button><button class="chip" data-s="called">called</button><button class="chip" data-s="watch">★ watch</button>
         </div>
         <div class="scroll" id="rows"></div>
       </div>
@@ -374,7 +414,7 @@ td.rk{font-family:RB;font-weight:900;font-size:18px;width:60px}
       </div></div>
     </div>
   </div>
-  <div class="foot"><span class="l" id="footL">data: Jupiter · GeckoTerminal · Solana RPC · Polymarket</span><span><kbd>⌘K</kbd>search</span><span><kbd>Q</kbd><kbd>E</kbd>tabs</span><span><kbd>↑</kbd><kbd>↓</kbd>coin</span><span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd>market</span><span><kbd>Y</kbd><kbd>N</kbd>call</span><span><kbd>ESC</kbd>street</span></div>
+  <div class="foot"><form class="cmd" id="cmd" autocomplete="off"><span>betz&gt;</span><input id="cmdI" placeholder="type a command, try: help" spellcheck="false"><em id="cmdO">data: Jupiter · GeckoTerminal · Polymarket</em></form><span><kbd>:</kbd>command</span><span><kbd>⌘K</kbd>search</span><span><kbd>Q</kbd><kbd>E</kbd>tabs</span><span><kbd>↑</kbd><kbd>↓</kbd>coin</span><span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd>market</span><span><kbd>Y</kbd><kbd>N</kbd>call</span><span><kbd>ESC</kbd>street</span></div>
 </section>
 
 <div class="modal" id="mWal"><div class="mbox"><div class="bh">connect a wallet <span class="sp"></span><button data-x>✕</button></div><div id="wList"></div><p class="mnote">betz only asks your wallet to sign a message when you make a call. It never asks for a transaction.</p></div></div>
