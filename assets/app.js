@@ -18,7 +18,7 @@ async function api(p, o) { const r = await fetch(p, o); const j = await r.json()
   const arc = (a0, a1, dx = 0, dy = 0) => { const [x0, y0] = P(a0), [x1, y1] = P(a1); return `M${cx + dx} ${cy + dy}L${x0 + dx} ${y0 + dy}A${R} ${R} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${x1 + dx} ${y1 + dy}Z`; };
   const body = arc(w1 + g, w0 + 360 - g), wedge = arc(w0 + g * .4, w1 - g * .4, ox, oy);
   $$('svg path.body').forEach(p => p.setAttribute('d', body)); $$('svg path.wedge').forEach(p => p.setAttribute('d', wedge));
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" rx="40" fill="#4a1238"/><g transform="translate(20 20) scale(.8)"><path fill="#fff6f2" d="${body}"/><path fill="#fff6f2" d="${wedge}"/></g></svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><g transform="translate(10 10) scale(.9)" stroke="#4a1238" stroke-width="10" stroke-linejoin="round" paint-order="stroke"><path fill="#fff6f2" d="${body}"/><path fill="#fff6f2" d="${wedge}"/></g></svg>`;
   $('link[rel=icon]').href = 'data:image/svg+xml,' + encodeURIComponent(svg); })();
 
 // ---------------------------------------------------------------- GTA VI clock
@@ -44,12 +44,15 @@ function openHome() { H.classList.remove('term'); window.betzScene?.mode('home')
 $('#enter').onclick = openTerm; $('#toHome').onclick = openHome;
 $('#hconn').onclick = () => connect(); $('#wal').onclick = () => S.wallet ? disconnect() : connect();
 
+// ---------------------------------------------------------------- the GTA money counter on the street
+let cashV = 0; function cashTo(v) { const a = cashV, t0 = performance.now(); const step = t => { const k = Math.min(1, (t - t0) / 1600), e = 1 - Math.pow(1 - k, 3); cashV = a + (v - a) * e; $('#cash').textContent = '$' + Math.round(cashV).toLocaleString('en-US'); if (k < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); }
+
 // ---------------------------------------------------------------- coins
 async function loadCoins() { try { const j = await api('/api/coins'); S.coins = j.coins || []; S.byMint = Object.fromEntries(S.coins.map(c => [c.mint, c])); coinsOk = true; progress();
     if (!S.sel && S.coins[0]) S.sel = S.coins[0].mint; renderStats(); renderRows(); renderDet(); renderMovers(); renderMap(); renderHub(); $('#upd').textContent = 'updated ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
   catch (e) { coinsOk = true; progress(); $('#rows').innerHTML = `<div class="empty">couldn't reach Jupiter right now (${esc(e.message)}). retrying…</div>`; } }
 function ico(c, big) { return c.icon ? `<img src="${esc(c.icon)}" alt="" loading="lazy" onerror="this.outerHTML='<div class=ph>${esc((c.symbol || '?')[0])}</div>'">` : `<div class="ph">${esc((c.symbol || '?')[0])}</div>`; }
-function renderStats() { const C = S.coins; if (C.length && $('#fCoins')) $('#fCoins').textContent = C.length; $('#sCoins').textContent = C.length; $('#nCoins').textContent = C.length; $('#sMcap').textContent = money(C.reduce((a, c) => a + c.mcap, 0)); $('#sVol').textContent = money(C.reduce((a, c) => a + c.vol24h, 0));
+function renderStats() { const C = S.coins; if (C.length && $('#cash')) cashTo(C.reduce((x, c) => x + c.mcap, 0)); if (C.length && $('#fCoins')) $('#fCoins').textContent = C.length; $('#sCoins').textContent = C.length; $('#nCoins').textContent = C.length; $('#sMcap').textContent = money(C.reduce((a, c) => a + c.mcap, 0)); $('#sVol').textContent = money(C.reduce((a, c) => a + c.vol24h, 0));
   const t = S.board?.totals; $('#sOpen').textContent = t ? t.open : '—'; $('#sCallers').textContent = t ? t.callers : '—'; }
 function callsOn(m) { const o = S.board?.odds?.[m]; return o ? Object.values(o).reduce((a, x) => a + x.y + x.n, 0) : 0; }
 function upShare(m) { const o = S.board?.odds?.[m]?.up; return o && o.y + o.n ? o.y / (o.y + o.n) : null; }
