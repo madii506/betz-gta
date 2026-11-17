@@ -28,7 +28,7 @@ setInterval(clock, 1000); clock();
 
 // ---------------------------------------------------------------- state
 const S = { coins: [], byMint: {}, sel: null, sort: 'mcap', q: '', board: null, pm: null, wallet: null, prov: null, focus: 0, tf: 'm', chart: null, cmode: store.get('betz:cm') || 'l', watch: (() => { try { return JSON.parse(store.get('betz:watch') || '[]'); } catch (_) { return []; } })() };
-const MK = [['up', 'Higher in 24h?'], ['x2', '2x in 24h?'], ['rug', 'Halves in 24h?']];
+const MK = [['up', 'Higher in 24h?'], ['p50', '+50% in 24h?'], ['x2', '2x in 24h?'], ['x10', '10x in 24h?'], ['rug', 'Halves in 24h?']];
 
 // ---------------------------------------------------------------- loading: one line, nothing else
 let sceneOk = false, coinsOk = false; const lb = $('#lbar');
@@ -113,7 +113,7 @@ function safety(c) { const a = c.audit || {}; const row = (ok, label, val) => `<
     ${row(c.liq ? c.liq > 20000 : null, 'liquidity', money(c.liq))}
     ${row(c.grad ? true : c.launchpad ? null : null, 'bonding curve', c.grad ? 'graduated ' + ago(new Date(c.grad).getTime()) + ' ago' : 'on curve / n.a.')}
     ${row(c.isVerified || (c.tags || []).includes('verified') ? true : null, 'Jupiter verified', c.isVerified || (c.tags || []).includes('verified') ? 'yes' : 'no')}</div>`; }
-function coinCalls(c) { const R = (S.board?.recent || []).filter(x => x.mint === c.mint); return R.length ? R.slice(0, 8).map(x => `<div class="fi"><span class="pill ${x.side}">${x.side === 'Y' ? 'YES' : 'NO'}</span><span>${mq(x.mkt)}<br><span class="when">${short(x.wallet)} at ${money(x.mcap0)}</span></span><span class="when">${x.status === 'open' ? ago(x.ts) : `<span class="pill ${x.status}">${x.status}</span>`}</span></div>`).join('') : '<div class="empty">no calls on this coin yet. be first.</div>'; }
+function coinCalls(c) { const R = (S.board?.recent || []).filter(x => x.mint === c.mint); return R.length ? R.slice(0, 8).map(x => `<div class="fi"><span class="pill ${x.side}">${x.side === 'Y' ? 'YES' : 'NO'}</span><span>${mq(x.mkt)}<br><span class="when"><span class="wl" data-w="${x.wallet}">${short(x.wallet)}</span> at ${money(x.mcap0)}</span></span><span class="when">${x.status === 'open' ? ago(x.ts) : `<span class="pill ${x.status}">${x.status}</span>`}</span></div>`).join('') : '<div class="empty">no calls on this coin yet. be first.</div>'; }
 function watching(m) { return (S.watch || []).includes(m); }
 function toggleWatch(m) { S.watch = watching(m) ? S.watch.filter(x => x !== m) : [...(S.watch || []), m]; store.set('betz:watch', JSON.stringify(S.watch)); toast(watching(m) ? 'added to watchlist' : 'removed from watchlist'); }
 function focusMk(i) { S.focus = i; $$('#det .mk').forEach((el, k) => el.classList.toggle('f', k === i)); }
@@ -142,6 +142,32 @@ async function extras(mint) {
   api('/api/holders?mint=' + mint).then(j => { if (S.sel !== mint || !$('#hds')) return; const Hs = j.holders || []; const t10 = j.top10 || 0;
     $('#t10').innerHTML = Hs.length ? `<span class="risk" style="background:${t10 > .5 ? 'rgba(255,90,106,.2);color:#ff5a6a' : t10 > .3 ? 'rgba(255,198,90,.2);color:#ffc65a' : 'rgba(47,224,168,.18);color:#2fe0a8'}">top 10 hold ${(t10 * 100).toFixed(1)}%</span>` : '';
     $('#hds').innerHTML = Hs.length ? Hs.slice(0, 10).map((h, i) => `<div class="hd"><span class="when">${i + 1}</span><a href="https://solscan.io/account/${esc(h.owner || h.account)}" target="_blank" rel="noopener">${h.tag ? esc(h.tag.replace(/liquidity pool/i, 'pool')) : short(h.owner || h.account)}</a><b>${(h.pct * 100).toFixed(2)}%</b><div class="hb"><i style="width:${Math.min(100, h.pct * 100 * 2)}%"></i></div></div>`).join('') : '<div class="empty">holders unavailable.</div>'; }).catch(() => { if ($('#hds')) $('#hds').innerHTML = '<div class="empty">holders unavailable right now.</div>'; }); }
+
+// ---------------------------------------------------------------- every market, one board
+function renderAll() { const el = $('#allm'); if (!el) return; const C = S.coins.slice().sort((a, b) => callsOn(b.mint) - callsOn(a.mint) || b.mcap - a.mcap);
+  el.innerHTML = `<table class="am"><thead><tr><th>coin</th><th>mcap</th><th>24h</th>${MK.map(m => `<th>${m[1]}</th>`).join('')}</tr></thead><tbody>${C.map(c => { const o = S.board?.odds?.[c.mint] || {};
+    return `<tr><td><div class="co">${ico(c)}$${esc(c.symbol)}</div></td><td>${money(c.mcap)}</td><td class="${cls(c.ch24h)}">${pct(c.ch24h)}</td>${MK.map(([k], i) => { const x = o[k] || { y: 0, n: 0 }, n = x.y + x.n, y = n ? x.y / n : null;
+      return `<td class="c" data-m="${c.mint}" data-i="${i}"><div class="cl"><b class="${y == null ? '' : y >= .5 ? 'up' : 'dn'}">${y == null ? '—' : 'YES ' + Math.round(y * 100) + '%'}</b><div class="bar"><i style="width:${y == null ? 0 : y * 100}%"></i><u style="width:${y == null ? 0 : (1 - y) * 100}%"></u></div><span>${n} call${n === 1 ? '' : 's'}</span></div></td>`; }).join('')}</tr>`; }).join('')}</tbody></table>`;
+  $$('#allm td.c').forEach(td => td.onclick = () => { tab('markets'); select(td.dataset.m, 1); focusMk(+td.dataset.i); $$('#det .mk')[+td.dataset.i]?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }); }
+
+// ---------------------------------------------------------------- the wire: live trades across the GTA coins
+let sideTab = 'calls';
+$$('[data-side2]').forEach(b => b.onclick = () => { sideTab = b.dataset.side2; $$('[data-side2]').forEach(x => x.classList.toggle('on', x === b)); $('#feed').hidden = sideTab !== 'calls'; $('#wire').hidden = sideTab !== 'wire'; if (sideTab === 'wire') loadWire(); });
+async function loadWire() { if (sideTab !== 'wire' || S.tab !== 'markets') return; try { const j = await api('/api/wire'); const T = j.trades || [];
+    $('#wire').innerHTML = T.length ? T.slice(0, 50).map(t => { const c = S.byMint[t.mint] || { symbol: t.sym, icon: t.icon }; return `<div class="wi" data-m="${t.mint}">${ico(c)}<span><b class="${t.buy ? 'up' : 'dn'}">${t.buy ? 'BUY' : 'SELL'}</b> $${esc(t.sym)} <b>${money(t.usd)}</b><br><span class="when">${short(t.wallet)}</span></span><span class="when">${ago(t.ts)}</span></div>`; }).join('') : '<div class="empty">no trades right now.</div>';
+    $$('#wire .wi').forEach(r => r.onclick = () => select(r.dataset.m, 1)); } catch (e) { $('#wire').innerHTML = `<div class="empty">the wire is quiet (${esc(e.message)}).</div>`; } }
+setInterval(loadWire, 20000);
+
+// ---------------------------------------------------------------- GTA VI news
+async function loadNews() { try { S.news = (await api('/api/news')).items || []; if (S.tab === 'hub') renderHub(); } catch (_) { S.news = []; } }
+
+// ---------------------------------------------------------------- caller profile
+async function profile(w) { $('#prof').innerHTML = '<div class="empty">loading…</div>'; $('#mProf').classList.add('on');
+  try { const j = await api('/api/board?wallet=' + encodeURIComponent(w)); const M = j.mine || [], row = (j.board || []).find(x => x.wallet === w), rank = (j.board || []).findIndex(x => x.wallet === w) + 1;
+    $('#prof').innerHTML = `<div class="pf"><div class="bsum"><div><span>rank</span><b>${rank || '—'}</b></div><div><span>won / lost</span><b>${row ? row.won + ' / ' + row.lost : '0 / 0'}</b></div><div><span>accuracy</span><b>${row?.acc == null ? '—' : Math.round(row.acc * 100) + '%'}</b></div><div><span>best streak</span><b>${row?.best || 0}</b></div></div>
+      <div class="when" style="margin-bottom:10px">${esc(w)} · <a href="https://solscan.io/account/${esc(w)}" target="_blank" rel="noopener"><u>solscan ↗</u></a></div>${M.length ? M.slice(0, 30).map(c => { const k = S.byMint[c.mint]; return `<div class="fi"><span class="pill ${c.side}">${c.side === 'Y' ? 'YES' : 'NO'}</span><span><b>$${esc(k?.symbol || short(c.mint))}</b> · ${mq(c.mkt)}<br><span class="when">at ${money(c.mcap0)}${c.mcap1 ? ' → ' + money(c.mcap1) : ''}</span></span><span class="when">${c.status === 'open' ? left(c.due) + ' left' : `<span class="pill ${c.status}">${c.status}</span>`}</span></div>`; }).join('') : '<div class="empty">no calls.</div>'}</div>`; }
+  catch (e) { $('#prof').innerHTML = `<div class="empty">${esc(e.message)}</div>`; } }
+document.addEventListener('click', e => { const t = e.target.closest('[data-w]'); if (t) { e.preventDefault(); e.stopPropagation(); profile(t.dataset.w); } });
 
 // ---------------------------------------------------------------- movers: six ways to read the GTA trenches
 function renderMovers() { const C = S.coins; if (!C.length) return; const L = (t, sub, list, f) => `<div class="mv"><h4>${t}<span>${sub}</span></h4>${list.slice(0, 8).map((c, i) => `<div class="r" data-m="${c.mint}"><i>${i + 1}</i>${ico(c)}<span>$${esc(c.symbol)}</span><b class="${f(c)[1]}">${f(c)[0]}</b></div>`).join('')}</div>`;
@@ -174,21 +200,22 @@ function renderHub() { const C = S.coins, B = S.board, E = (S.pm?.events || []).
   $('#hub').innerHTML = `<div class="hc"><h4>GTA VI release</h4><div class="big" id="hubCd">—</div><div class="kv"><div><span>GTA coins</span><b>${C.length}</b></div><div><span>combined mcap</span><b>${money(tot)}</b></div><div><span>24h volume</span><b>${money(vol)}</b></div><div><span>green today</span><b>${up} / ${C.length}</b></div><div><span>open calls</span><b>${B?.totals?.open ?? '—'}</b></div><div><span>callers</span><b>${B?.totals?.callers ?? '—'}</b></div></div></div>
     <div class="hc"><h4>Polymarket says</h4>${E.length ? E.map(e => `<div style="margin-bottom:14px"><div style="font-weight:700;margin-bottom:6px">${esc(e.title)}</div>${e.markets.slice(0, 2).map(m => `<div class="ev"><div class="m" style="padding:0;border:0"><span>${esc(m.label || m.q)}</span><b>${Math.round(m.yes * 100)}%</b><div class="bar"><i style="width:${m.yes * 100}%"></i><u style="width:${(1 - m.yes) * 100}%"></u></div></div></div>`).join('')}</div>`).join('') : '<div class="empty">loading…</div>'}</div>
     <div class="hc sent"><h4>crowd: most bullish (higher in 24h)</h4>${sent.length ? sent.slice(0, 6).map(x => `<div class="r" data-m="${x.c.mint}"><span>$${esc(x.c.symbol)}</span><div class="bar"><i style="width:${x.y * 100}%"></i><u style="width:${(1 - x.y) * 100}%"></u></div><b class="up mono">${Math.round(x.y * 100)}%</b></div>`).join('') : '<div class="empty">no calls yet. be the first.</div>'}</div>
-    <div class="hc sent"><h4>crowd: most bearish</h4>${sent.length ? sent.slice().reverse().slice(0, 6).map(x => `<div class="r" data-m="${x.c.mint}"><span>$${esc(x.c.symbol)}</span><div class="bar"><i style="width:${x.y * 100}%"></i><u style="width:${(1 - x.y) * 100}%"></u></div><b class="dn mono">${Math.round((1 - x.y) * 100)}%</b></div>`).join('') : '<div class="empty">no calls yet.</div>'}</div>`;
+    <div class="hc sent"><h4>crowd: most bearish</h4>${sent.length ? sent.slice().reverse().slice(0, 6).map(x => `<div class="r" data-m="${x.c.mint}"><span>$${esc(x.c.symbol)}</span><div class="bar"><i style="width:${x.y * 100}%"></i><u style="width:${(1 - x.y) * 100}%"></u></div><b class="dn mono">${Math.round((1 - x.y) * 100)}%</b></div>`).join('') : '<div class="empty">no calls yet.</div>'}</div>
+    <div class="hc wide news"><h4>GTA VI news · live</h4>${(S.news || []).length ? S.news.slice(0, 12).map(n => `<a href="${esc(n.url)}" target="_blank" rel="noopener"><span style="white-space:normal;font-family:Rubik;font-size:14px;color:var(--paper)"><b style="font-weight:500">${esc(n.title)}</b><i>${esc(n.src)}</i></span><span>${n.ts ? ago(n.ts) : ''}</span></a>`).join('') : '<div class="empty">loading headlines…</div>'}</div>`;
   $$('#hub .r[data-m]').forEach(r => r.onclick = () => { tab('markets'); select(r.dataset.m, 1); }); clock(); }
 
 // ---------------------------------------------------------------- board, feed, my calls
-async function loadBoard() { try { S.board = await api('/api/board' + (S.wallet ? '?wallet=' + S.wallet : '')); renderStats(); renderFeed(); renderBoard(); renderMine(); renderRows(); if (S.tab === 'hub') renderHub(); if (!document.activeElement?.closest?.('#det')) renderDetSoft(); } catch (e) { $('#feed').innerHTML = `<div class="empty">calls are offline: ${esc(e.message)}</div>`; } }
+async function loadBoard() { try { S.board = await api('/api/board' + (S.wallet ? '?wallet=' + S.wallet : '')); renderStats(); renderFeed(); renderBoard(); renderMine(); renderRows(); if (S.tab === 'hub') renderHub(); if (S.tab === 'all') renderAll(); if (!document.activeElement?.closest?.('#det')) renderDetSoft(); } catch (e) { $('#feed').innerHTML = `<div class="empty">calls are offline: ${esc(e.message)}</div>`; } }
 function renderDetSoft() { const c = S.byMint[S.sel]; if (!c || !$('#det .mkts')) return renderDet(); const odds = S.board?.odds?.[c.mint] || {}; if ($('#ccalls')) $('#ccalls').innerHTML = coinCalls(c);
   $$('#det .mk').forEach(el => { const k = el.dataset.k, o = odds[k] || { y: 0, n: 0 }, n = o.y + o.n, y = n ? o.y / n : null; $('.od', el).innerHTML = `<span class="up">YES ${y == null ? '—' : Math.round(y * 100) + '%'}</span><span class="dn">NO ${y == null ? '—' : Math.round((1 - y) * 100) + '%'}</span>`;
     $('.bar i', el).style.width = (y == null ? 0 : y * 100) + '%'; $('.bar u', el).style.width = (y == null ? 0 : (1 - y) * 100) + '%'; $('.n', el).textContent = n ? n + ' open call' + (n === 1 ? '' : 's') : 'no calls yet · be first'; }); }
 const mq = k => (MK.find(m => m[0] === k) || [, k])[1];
 function renderFeed() { const R = S.board?.recent || []; $('#nRecent').textContent = (S.board?.totals?.calls || 0) + ' total';
   if (!S.board?.store) { $('#feed').innerHTML = '<div class="empty">calls open the moment storage is connected.</div>'; return; }
-  $('#feed').innerHTML = R.length ? R.map(c => { const k = S.byMint[c.mint]; return `<div class="fi"><span class="pill ${c.side}">${c.side === 'Y' ? 'YES' : 'NO'}</span><span><b>$${esc(k?.symbol || short(c.mint))}</b> · ${mq(c.mkt)}<br><span class="when">${short(c.wallet)} at ${money(c.mcap0)}</span></span><span class="when">${c.status === 'open' ? ago(c.ts) : `<span class="pill ${c.status}">${c.status}</span>`}</span></div>`; }).join('') : '<div class="empty">no calls yet. the first one lands here.</div>'; }
+  $('#feed').innerHTML = R.length ? R.map(c => { const k = S.byMint[c.mint]; return `<div class="fi"><span class="pill ${c.side}">${c.side === 'Y' ? 'YES' : 'NO'}</span><span><b>$${esc(k?.symbol || short(c.mint))}</b> · ${mq(c.mkt)}<br><span class="when"><span class="wl" data-w="${c.wallet}">${short(c.wallet)}</span> at ${money(c.mcap0)}</span></span><span class="when">${c.status === 'open' ? ago(c.ts) : `<span class="pill ${c.status}">${c.status}</span>`}</span></div>`; }).join('') : '<div class="empty">no calls yet. the first one lands here.</div>'; }
 function renderBoard() { const B = S.board?.board || []; if (!B.length) { $('#board').innerHTML = '<div class="empty">no graded calls yet. the first winners show up 24 hours after the first calls.</div>'; return; }
   const T = S.board?.totals || {}, best = B.filter(w => w.won + w.lost >= 3).sort((a, b) => b.acc - a.acc)[0];
-  $('#board').innerHTML = `<div class="bsum"><div><span>calls made</span><b>${T.calls || 0}</b></div><div><span>graded</span><b>${T.graded || 0}</b></div><div><span>callers</span><b>${T.callers || 0}</b></div><div><span>sharpest (3+ graded)</span><b>${best ? short(best.wallet) + ' · ' + Math.round(best.acc * 100) + '%' : '—'}</b></div></div><table><thead><tr><th>#</th><th>caller</th><th>won</th><th>lost</th><th>open</th><th>accuracy</th><th>best streak</th></tr></thead><tbody>${B.map((w, i) => `<tr class="${w.wallet === S.wallet ? 'me' : ''}"><td class="rk">${i + 1}</td><td>${short(w.wallet)}</td><td class="up">${w.won}</td><td class="dn">${w.lost}</td><td>${w.open}</td><td>${w.acc == null ? '—' : Math.round(w.acc * 100) + '%'}</td><td>${w.best}</td></tr>`).join('')}</tbody></table>`; }
+  $('#board').innerHTML = `<div class="bsum"><div><span>calls made</span><b>${T.calls || 0}</b></div><div><span>graded</span><b>${T.graded || 0}</b></div><div><span>callers</span><b>${T.callers || 0}</b></div><div><span>sharpest (3+ graded)</span><b>${best ? short(best.wallet) + ' · ' + Math.round(best.acc * 100) + '%' : '—'}</b></div></div><table><thead><tr><th>#</th><th>caller</th><th>won</th><th>lost</th><th>open</th><th>accuracy</th><th>best streak</th></tr></thead><tbody>${B.map((w, i) => `<tr class="${w.wallet === S.wallet ? 'me' : ''}"><td class="rk">${i + 1}</td><td><span class="wl" data-w="${w.wallet}">${short(w.wallet)}</span></td><td class="up">${w.won}</td><td class="dn">${w.lost}</td><td>${w.open}</td><td>${w.acc == null ? '—' : Math.round(w.acc * 100) + '%'}</td><td>${w.best}</td></tr>`).join('')}</tbody></table>`; }
 function renderMine() { const M = S.board?.mine || []; $('#nMine').textContent = M.length;
   if (!S.wallet) { $('#mine').innerHTML = '<div class="empty">connect a wallet to see your calls.</div>'; $('#mineSum').textContent = ''; return; }
   const w = M.filter(c => c.status === 'won').length, l = M.filter(c => c.status === 'lost').length; $('#mineSum').textContent = `${M.length} calls · ${w} won · ${l} lost`;
@@ -204,7 +231,7 @@ async function loadPM() { try { S.pm = await api('/api/pm'); const E = S.pm.even
 
 // ---------------------------------------------------------------- tabs + keys
 const TABS = $$('.tab').map(t => t.dataset.t);
-function tab(t) { $$('.tab').forEach(b => b.classList.toggle('on', b.dataset.t === t)); $$('.pane').forEach(p => p.classList.toggle('on', p.dataset.p === t)); S.tab = t; if (t === 'markets') renderDet(); if (t === 'map') requestAnimationFrame(renderMap); if (t === 'hub') renderHub(); if (t === 'movers') renderMovers(); }
+function tab(t) { $$('.tab').forEach(b => b.classList.toggle('on', b.dataset.t === t)); $$('.pane').forEach(p => p.classList.toggle('on', p.dataset.p === t)); S.tab = t; if (t === 'markets') renderDet(); if (t === 'map') requestAnimationFrame(renderMap); if (t === 'hub') renderHub(); if (t === 'movers') renderMovers(); if (t === 'all') renderAll(); if (t === 'hub' && !S.news) loadNews(); if (t === 'markets') loadWire(); }
 $$('.tab').forEach(b => b.onclick = () => tab(b.dataset.t)); S.tab = 'markets';
 addEventListener('keydown', e => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); if (!H.classList.contains('term')) openTerm(); pal(); return; } if (e.target.matches('input')) { if (e.key === 'Escape') e.target.blur(); return; } if ($('.modal.on')) { if (e.key === 'Escape') closeModals(); if (e.key === 'Enter' && $('#mCall.on')) $('#sign').click(); return; }
   const k = e.key.toLowerCase();
@@ -214,27 +241,30 @@ addEventListener('keydown', e => { if ((e.metaKey || e.ctrlKey) && e.key.toLower
   if (k === 'q' || k === 'e') { const i = TABS.indexOf(S.tab); tab(TABS[(i + (k === 'e' ? 1 : TABS.length - 1)) % TABS.length]); return; }
   if (S.tab !== 'markets') return;
   if (k === 'arrowdown' || k === 'arrowup') { e.preventDefault(); const C = sorted(), i = C.findIndex(c => c.mint === S.sel), n = C[Math.max(0, Math.min(C.length - 1, i + (k === 'arrowdown' ? 1 : -1)))]; if (n) select(n.mint, 1); }
-  if (k === '1' || k === '2' || k === '3') focusMk(+k - 1);
+  if (/^[1-5]$/.test(k)) focusMk(+k - 1);
   if (k === '/') { e.preventDefault(); $('#q').focus(); }
   if (e.key === ':' || e.key === '`') { e.preventDefault(); $('#cmdI').focus(); }
   if (k === 'y' || k === 'n') { const c = S.byMint[S.sel]; if (c && !myOpen(c.mint, MK[S.focus][0])) slip(c, MK[S.focus][0], k === 'y' ? 'Y' : 'N'); } });
 
 // ---------------------------------------------------------------- the command line
 const findCoin = q => { q = (q || '').replace(/^\$/, '').toLowerCase(); return S.coins.find(c => c.symbol.toLowerCase() === q) || S.coins.find(c => c.name.toLowerCase().includes(q)) || S.coins.find(c => c.mint.toLowerCase().startsWith(q)); };
-const HELP = 'open <coin> · call <coin> <up|2x|rug> <yes|no> · price <coin> · watch <coin> · sort <mcap|24h|volume|new|called|watch> · markets · movers · map · hub · poly · board · mine · how · connect · home';
+const HELP = 'open <coin> · call <coin> <up|50|2x|10x|rug> <yes|no> · whois <wallet> · price <coin> · watch <coin> · sort <mcap|24h|volume|new|called|watch> · markets · movers · map · hub · poly · board · mine · how · connect · home';
 const hist = []; let hi = 0;
 function run(line) { const a = line.trim().split(/\s+/), c0 = (a[0] || '').toLowerCase(), out = m => $('#cmdO').textContent = m; if (!c0) return; hist.unshift(line); hi = -1;
   const tabsMap = { markets: 'markets', movers: 'movers', map: 'map', hub: 'hub', gta: 'hub', poly: 'poly', polymarket: 'poly', board: 'board', leaderboard: 'board', mine: 'mine', calls: 'mine', how: 'how', help2: 'how' };
   if (c0 === 'help' || c0 === '?') return out(HELP);
   if (tabsMap[c0]) { tab(tabsMap[c0]); return out('→ ' + tabsMap[c0]); }
   if (c0 === 'home' || c0 === 'exit') { openHome(); return; }
+  if (c0 === 'whois' && a[1]) { profile(a[1]); return out('loading ' + short(a[1])); }
+  if (c0 === 'news') { tab('hub'); return out('→ hub · news'); }
+  if (c0 === 'all') { tab('all'); return out('→ all markets'); }
   if (c0 === 'connect') { connect(); return out('opening wallets…'); }
   if (c0 === 'sort') { const k = { mcap: 'mcap', '24h': 'ch24h', volume: 'vol24h', vol: 'vol24h', new: 'new', called: 'called', watch: 'watch' }[(a[1] || '').toLowerCase()]; if (!k) return out('sort by: mcap 24h volume new called watch'); tab('markets'); S.sort = k; $$('.chip[data-s]').forEach(x => x.classList.toggle('on', x.dataset.s === k)); renderRows(); return out('sorted by ' + a[1]); }
   const c = findCoin(a[1]); if (['open', 'price', 'watch', 'call'].includes(c0) && !c) return out('no GTA coin called "' + (a[1] || '') + '"');
   if (c0 === 'open') { tab('markets'); select(c.mint, 1); return out(`$${c.symbol} · ${money(c.mcap)} · ${pct(c.ch24h)} 24h`); }
   if (c0 === 'price') return out(`$${c.symbol}  price ${money(c.price)}  mcap ${money(c.mcap)}  1h ${pct(c.ch1h)}  24h ${pct(c.ch24h)}  holders ${(c.holders || 0).toLocaleString()}`);
   if (c0 === 'watch') { toggleWatch(c.mint); renderRows(); return out((watching(c.mint) ? 'watching $' : 'stopped watching $') + c.symbol); }
-  if (c0 === 'call') { const k = { up: 'up', higher: 'up', '2x': 'x2', x2: 'x2', rug: 'rug', halves: 'rug' }[(a[2] || '').toLowerCase()], sd = (a[3] || '').toLowerCase(); if (!k || !['yes', 'no', 'y', 'n'].includes(sd)) return out('usage: call <coin> <up|2x|rug> <yes|no>');
+  if (c0 === 'call') { const k = { up: 'up', higher: 'up', '50': 'p50', '+50': 'p50', p50: 'p50', '2x': 'x2', x2: 'x2', '10x': 'x10', x10: 'x10', moon: 'x10', rug: 'rug', halves: 'rug' }[(a[2] || '').toLowerCase()], sd = (a[3] || '').toLowerCase(); if (!k || !['yes', 'no', 'y', 'n'].includes(sd)) return out('usage: call <coin> <up|50|2x|10x|rug> <yes|no>');
     tab('markets'); select(c.mint, 1); if (myOpen(c.mint, k)) return out('you already have an open call on that market'); slip(c, k, sd[0] === 'y' ? 'Y' : 'N'); return out('sign the slip to lock it'); }
   out('unknown command. type help'); }
 $('#cmd').onsubmit = e => { e.preventDefault(); const i = $('#cmdI'); run(i.value); i.value = ''; };
@@ -288,7 +318,7 @@ function share(c, k, side) { const cv = $('#card'), g = cv.getContext('2d'), W =
   $('#tw').href = 'https://x.com/intent/post?text=' + encodeURIComponent(`I called ${side === 'Y' ? 'YES' : 'NO'} on $${c.symbol}: ${mq(k)}\ncalled at ${money(c.mcap)}, graded on-chain in 24h.\n\n${location.origin}`); $('#mShare').classList.add('on'); }
 
 // ---------------------------------------------------------------- go
-loadCoins(); loadBoard(); loadPM();
+loadCoins(); loadBoard(); loadPM(); loadNews(); setInterval(loadNews, 600000);
 setInterval(loadCoins, 30000); setInterval(loadBoard, 15000); setInterval(loadPM, 120000);
 setInterval(() => { if (S.tab === 'mine') renderMine(); }, 30000);
 addEventListener('resize', () => { if (S.tab === 'markets' && S.sel) drawChart(S.sel); if (S.tab === 'map') renderMap(); });
