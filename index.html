@@ -84,6 +84,14 @@ html.term .tape{opacity:0;transform:translateY(40px)}
 .tape .it b{font-weight:700}
 .up{color:var(--yes)}.dn{color:var(--no)}
 
+.tagline{font-family:RB,Rubik;font-weight:900;font-size:clamp(20px,2.4vw,34px);letter-spacing:-.005em;text-shadow:0 4px 20px rgba(30,4,26,.6),0 0 2px rgba(30,4,26,.5);opacity:0;transform:translateY(16px);transition:all 1s .3s cubic-bezier(.2,.8,.2,1)}
+html.go .tagline{opacity:1;transform:none}
+#radar{position:fixed;left:max(20px,2.4vw);bottom:max(20px,3vh);width:clamp(120px,13vw,180px);height:clamp(120px,13vw,180px);z-index:6;border-radius:50%;box-shadow:0 10px 30px rgba(10,2,10,.45);opacity:0;transition:opacity 1s .6s}
+html.go #radar{opacity:1}html.term #radar{opacity:0;pointer-events:none;transition:opacity .4s}
+.cash{position:fixed;top:max(18px,3vh);right:max(20px,3vw);z-index:6;text-align:right;opacity:0;transition:opacity 1s .6s;pointer-events:none}
+html.go .cash{opacity:1}html.term .cash{opacity:0;transition:opacity .4s}
+.cash b{display:block;font-family:RB;font-weight:900;font-size:clamp(24px,2.6vw,40px);color:#7ee58f;letter-spacing:.01em;-webkit-text-stroke:2px #0d2a12;paint-order:stroke fill;text-shadow:0 3px 0 #0d2a12,0 6px 18px rgba(10,2,10,.4)}
+.cash span{font-weight:700;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--paper);text-shadow:0 2px 8px rgba(10,2,10,.7)}
 /* ---------------------------------------------------------------- terminal: a pause menu */
 #term{position:fixed;inset:0;z-index:8;display:flex;flex-direction:column;opacity:0;visibility:hidden;transition:opacity .6s ease,visibility .6s}
 html.term #term{opacity:1;visibility:visible}
@@ -300,6 +308,7 @@ table.am .cl{display:flex;flex-direction:column;gap:4px}table.am .cl .bar{height
 #toast.err{background:var(--no);color:#2a050a}
 /* phone */
 @media (max-width:860px){
+  .cash b{font-size:22px}.cash span{font-size:8px}#radar{width:110px;height:110px}
   .feats{display:grid;grid-template-columns:1fr 1fr;width:min(420px,92vw)}.ft{width:auto;padding:10px 11px}.ft:nth-child(5){grid-column:1/-1}.ft strong{font-size:13px}.ft i{font-size:11.5px}
   .movers{grid-template-columns:1fr}.hub{grid-template-columns:1fr}.two{grid-template-columns:1fr}.mapw{height:60vh;flex:none}
   .hero:before{inset:-12vh -10vw}
@@ -324,19 +333,16 @@ table.am .cl{display:flex;flex-direction:column;gap:4px}table.am .cl .bar{height
 <section id="home">
   <div class="hero">
     <h1><span>b</span><span>e</span><span>t</span><span>z</span></h1>
-    <div class="feats">
-      <div class="ft"><b>01</b><strong>call any GTA coin</strong><i>YES or NO on <em id="fCoins">every</em> live coin</i></div>
-      <div class="ft"><b>02</b><strong>free to play</strong><i>sign a message. no SOL, no tx</i></div>
-      <div class="ft"><b>03</b><strong>graded on-chain</strong><i>24h later, from live market cap</i></div>
-      <div class="ft"><b>04</b><strong>GTA VI odds</strong><i><em id="fPm">live</em> Polymarket markets</i></div>
-      <div class="ft"><b>05</b><strong>top the board</strong><i>every correct call climbs</i></div>
-    </div>
+    <p class="tagline">Every GTA coin is now a market.</p>
     <div class="cta">
       <button class="btn w" id="enter">enter terminal <span class="k">↵</span></button>
       <button class="btn o" id="hconn"><i class="dot"></i><span>connect wallet</span></button>
     </div>
   </div>
 </section>
+
+<canvas id="radar" width="360" height="360"></canvas>
+<div class="cash" id="cashBox"><b id="cash">$0</b><span>GTA coins on the street</span></div>
 
 <section id="term">
   <div class="th">
