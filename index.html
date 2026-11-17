@@ -281,6 +281,80 @@ table.am .cl{display:flex;flex-direction:column;gap:4px}table.am .cl .bar{height
 .pf{padding:16px}.pf .bsum{margin:-16px -16px 12px}
 .wl{cursor:pointer;text-decoration:underline dotted rgba(255,246,242,.35);text-underline-offset:3px}
 @media (max-width:1400px){.tab{padding:0 10px;font-size:11px}}
+
+/* ================= neon header ================= */
+.hero h1{position:relative;color:#fff8fb}
+.hero h1 span{animation:drop .9s cubic-bezier(.2,1.3,.3,1) both,bob 4.8s ease-in-out infinite,flick 3.7s linear infinite;text-shadow:0 0 6px rgba(255,255,255,.85),0 0 20px #ff4fa6,0 0 46px #ff4fa6,0 0 92px rgba(255,79,166,.55),0 14px 40px rgba(30,4,26,.45)}
+.hero h1 span:nth-child(1){animation-delay:.05s,0s,1.2s;animation-duration:.9s,4.8s,4.3s}
+.hero h1 span:nth-child(2){animation-delay:.13s,.15s,.4s;animation-duration:.9s,4.8s,2.9s}
+.hero h1 span:nth-child(3){animation-delay:.21s,.3s,2.1s;animation-duration:.9s,4.8s,5.6s}
+.hero h1 span:nth-child(4){animation-delay:.29s,.45s,.9s;animation-duration:.9s,4.8s,1.9s}
+@keyframes flick{0%,100%{opacity:1;filter:none}
+ 31%{opacity:1;filter:none}32%{opacity:.18;filter:brightness(.5)}33%{opacity:1;filter:none}34.5%{opacity:.35;filter:brightness(.6)}36%{opacity:1;filter:none}
+ 71%{opacity:1}72%{opacity:.25;filter:brightness(.5)}73.5%{opacity:1;filter:brightness(1.35)}75%{opacity:1;filter:none}
+ 88%{opacity:1}88.6%{opacity:.5}89.2%{opacity:1}}
+.hero h1:before,.hero h1:after{content:attr(data-t);position:absolute;inset:0;pointer-events:none;opacity:0;mix-blend-mode:screen}
+.hero h1:before{color:#19d3c5;animation:gl1 3.3s steps(1) infinite 1.6s}
+.hero h1:after{color:#ff4fa6;animation:gl2 3.3s steps(1) infinite 1.6s}
+@keyframes gl1{0%,100%{opacity:0}40%{opacity:.9;transform:translate(-7px,2px);clip-path:inset(12% 0 62% 0)}41%{opacity:.9;transform:translate(6px,-2px);clip-path:inset(58% 0 18% 0)}42%{opacity:.8;transform:translate(-4px,0);clip-path:inset(30% 0 45% 0)}43%{opacity:0}
+ 82%{opacity:.85;transform:translate(9px,1px);clip-path:inset(70% 0 6% 0)}83%{opacity:0}}
+@keyframes gl2{0%,100%{opacity:0}40%{opacity:.9;transform:translate(7px,-2px);clip-path:inset(48% 0 30% 0)}41%{opacity:.9;transform:translate(-6px,2px);clip-path:inset(8% 0 70% 0)}42%{opacity:.8;transform:translate(5px,0);clip-path:inset(22% 0 55% 0)}43%{opacity:0}
+ 82%{opacity:.85;transform:translate(-9px,-1px);clip-path:inset(4% 0 80% 0)}83%{opacity:0}}
+.tagline{animation:tflick 6.1s linear infinite 2s}
+@keyframes tflick{0%,100%{opacity:1}52%{opacity:1}53%{opacity:.4}54%{opacity:1}55.5%{opacity:.6}57%{opacity:1}}
+html:not(.go) .tagline{animation-play-state:paused}
+@media (prefers-reduced-motion:reduce){.hero h1 span,.hero h1:before,.hero h1:after,.tagline{animation:none!important}}
+/* ================= terminal: transition wipe ================= */
+#wipe{position:fixed;inset:0;z-index:30;pointer-events:none;display:flex;transform:skewX(-14deg) scaleX(1.4)}
+#wipe i{flex:1;background:var(--pink);transform:translateY(-110%)}
+#wipe i:nth-child(2){background:#19d3c5}#wipe i:nth-child(3){background:#ffc65a}#wipe i:nth-child(4){background:#b06bff}#wipe i:nth-child(5){background:#fff6f2}
+#wipe.go i{animation:wipe .9s cubic-bezier(.7,0,.3,1) both}
+#wipe.go i:nth-child(2){animation-delay:.04s}#wipe.go i:nth-child(3){animation-delay:.08s}#wipe.go i:nth-child(4){animation-delay:.12s}#wipe.go i:nth-child(5){animation-delay:.16s}
+@keyframes wipe{0%{transform:translateY(-110%)}45%,55%{transform:translateY(0)}100%{transform:translateY(110%)}}
+html.term .tb,html.term .strip,html.term .tick,html.term .th{animation:tin .7s cubic-bezier(.2,.8,.2,1) both}
+html.term .th{animation-delay:.35s}html.term .tick{animation-delay:.42s}html.term .strip{animation-delay:.48s}html.term .tb{animation-delay:.55s}
+@keyframes tin{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+/* ================= ticker ================= */
+.tick{margin:10px max(18px,3vw) 0;height:30px;overflow:hidden;background:rgba(10,2,10,.55);border:1px solid var(--line);border-radius:3px;position:relative}
+.tick:before{content:'LIVE';position:absolute;left:0;top:0;bottom:0;z-index:2;display:flex;align-items:center;padding:0 10px;background:var(--pink);color:#2a0618;font-weight:900;font-size:11px;letter-spacing:.16em}
+.trun{display:flex;gap:28px;white-space:nowrap;align-items:center;height:30px;padding-left:70px;animation:tape 80s linear infinite;width:max-content}
+.tick:hover .trun{animation-play-state:paused}
+@keyframes tape{to{transform:translateX(-50%)}}
+.ti{display:inline-flex;gap:7px;align-items:center;font-size:12px;font-family:JB;cursor:pointer}.ti img,.ti .ph{width:16px;height:16px;font-size:8px}
+.clk{font-size:13px;font-weight:700;color:var(--dim);letter-spacing:.04em;padding:0 6px}
+/* ================= rows: sparkline, wanted, flash ================= */
+.row{grid-template-columns:38px minmax(0,1fr) 58px auto;gap:10px}.row .nm span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.spk{width:58px!important}
+.spk{width:64px;height:26px;display:block}
+.wanted{display:inline-flex;gap:1px;font-size:10px;letter-spacing:0;margin-left:6px;vertical-align:1px}
+.wanted i{font-style:normal;color:rgba(255,246,242,.18)}.wanted i.on{color:#ffc65a;text-shadow:0 0 6px rgba(255,198,90,.7)}
+.row.on .wanted i{color:rgba(20,6,15,.2)}.row.on .wanted i.on{color:#c88a00;text-shadow:none}
+.row.fu{animation:fu 1.4s ease}.row.fd{animation:fd 1.4s ease}
+@keyframes fu{0%{background:rgba(47,224,168,.35)}100%{background:transparent}}@keyframes fd{0%{background:rgba(255,90,106,.35)}100%{background:transparent}}
+.dh .wl2{display:inline-flex;align-items:center;gap:6px;font-family:Rubik;font-weight:700;font-size:11px;letter-spacing:.14em;color:var(--dim)}
+.dh .wl2 .wanted{font-size:15px}
+/* ================= the city ================= */
+.cityw{position:relative;flex:1;min-height:0;margin:10px}
+.blk{position:absolute;border:2px solid rgba(20,4,18,.85);border-radius:3px;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;padding:8px 10px;transition:transform .2s,box-shadow .2s,filter .2s;animation:bin .6s cubic-bezier(.2,1.2,.3,1) both}
+.blk:hover{transform:scale(1.025);z-index:3;box-shadow:0 12px 34px rgba(0,0,0,.5);filter:brightness(1.12)}
+@keyframes bin{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
+.blk .bt{display:flex;gap:8px;align-items:center;font-weight:900;font-family:RB;font-size:clamp(12px,1.4vw,22px);text-shadow:0 2px 8px rgba(0,0,0,.4)}
+.blk .bt img,.blk .bt .ph{width:26px;height:26px;font-size:11px;border-radius:50%;border:2px solid rgba(255,255,255,.6)}
+.blk .bb{font-family:JB;font-size:12px;font-weight:700;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;text-shadow:0 1px 4px rgba(0,0,0,.4)}
+.blk .big2{font-family:RB;font-weight:900;font-size:clamp(14px,2.2vw,34px);line-height:1}
+.blk.sm{padding:4px 6px}.blk.sm .bb,.blk.sm .big2{display:none}.blk.sm .bt{font-size:11px}.blk.sm .bt img,.blk.sm .bt .ph{width:16px;height:16px}
+.blk .calls{position:absolute;top:6px;right:8px;font-family:JB;font-size:10px;padding:2px 6px;border-radius:9px;background:rgba(20,4,18,.6)}
+.blk.hot:after{content:'';position:absolute;inset:0;border:2px solid #ffc65a;border-radius:2px;animation:pulse 1.4s infinite}
+/* ================= call placed ================= */
+#mp{position:fixed;inset:0;z-index:70;display:none;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;background:radial-gradient(closest-side,rgba(10,2,10,.65),rgba(10,2,10,0))}
+#mp.on{display:flex}
+#mp .mp1{font-family:RB;font-weight:900;font-size:clamp(46px,8vw,120px);color:#ffc65a;letter-spacing:.02em;-webkit-text-stroke:3px #2a1200;paint-order:stroke fill;text-shadow:0 6px 0 #2a1200,0 0 40px rgba(255,198,90,.5);animation:mp1 2.6s cubic-bezier(.2,1.2,.3,1) both}
+#mp .mp2{font-family:RB;font-weight:900;font-size:clamp(16px,2vw,26px);color:#fff6f2;margin-top:10px;text-shadow:0 3px 10px rgba(0,0,0,.6);animation:mp2 2.6s both}
+#mp .mp3{font-family:RB;font-weight:900;font-size:clamp(14px,1.6vw,20px);color:#2fe0a8;margin-top:8px;letter-spacing:.14em;text-shadow:0 2px 8px rgba(0,0,0,.6);animation:mp2 2.6s .15s both}
+@keyframes mp1{0%{opacity:0;transform:scale(2.2)}14%{opacity:1;transform:scale(.96)}20%{transform:scale(1)}82%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.05)}}
+@keyframes mp2{0%,12%{opacity:0;transform:translateY(10px)}24%,82%{opacity:1;transform:none}100%{opacity:0}}
+/* ================= ranks ================= */
+.tier{font-family:Rubik;font-weight:900;font-size:10px;letter-spacing:.14em;text-transform:uppercase;padding:3px 8px;border-radius:3px;margin-left:8px}
+.tier.t0{background:rgba(255,246,242,.1);color:var(--dim)}.tier.t1{background:rgba(25,211,197,.18);color:#19d3c5}.tier.t2{background:rgba(176,107,255,.2);color:#c99bff}.tier.t3{background:rgba(255,79,166,.2);color:#ff7ab8}.tier.t4{background:#ffc65a;color:#2a1200}
 /* palette + share */
 .pal{width:min(560px,100%)}
 .pal input{width:100%;height:56px;padding:0 18px;background:transparent;border:0;border-bottom:1px solid var(--line);color:var(--paper);font:500 17px Rubik;outline:none}
@@ -308,6 +382,7 @@ table.am .cl{display:flex;flex-direction:column;gap:4px}table.am .cl .bar{height
 #toast.err{background:var(--no);color:#2a050a}
 /* phone */
 @media (max-width:860px){
+  .row{grid-template-columns:38px 1fr auto}.spk{display:none}.clk{display:none}.tick{margin:8px 10px 0}
   .cash b{font-size:22px}.cash span{font-size:8px}#radar{width:110px;height:110px}
   .feats{display:grid;grid-template-columns:1fr 1fr;width:min(420px,92vw)}.ft{width:auto;padding:10px 11px}.ft:nth-child(5){grid-column:1/-1}.ft strong{font-size:13px}.ft i{font-size:11.5px}
   .movers{grid-template-columns:1fr}.hub{grid-template-columns:1fr}.two{grid-template-columns:1fr}.mapw{height:60vh;flex:none}
@@ -332,7 +407,7 @@ table.am .cl{display:flex;flex-direction:column;gap:4px}table.am .cl .bar{height
 
 <section id="home">
   <div class="hero">
-    <h1><span>b</span><span>e</span><span>t</span><span>z</span></h1>
+    <h1 data-t="betz"><span>b</span><span>e</span><span>t</span><span>z</span></h1>
     <p class="tagline">Every GTA coin is now a market.</p>
     <div class="cta">
       <button class="btn w" id="enter">enter terminal <span class="k">↵</span></button>
@@ -342,7 +417,9 @@ table.am .cl{display:flex;flex-direction:column;gap:4px}table.am .cl .bar{height
 </section>
 
 <canvas id="radar" width="360" height="360"></canvas>
-<div class="cash" id="cashBox"><b id="cash">$0</b><span>GTA coins on the street</span></div>
+
+<div id="wipe"><i></i><i></i><i></i><i></i><i></i></div>
+<div id="mp"><div class="mp1">CALL PLACED!</div><div class="mp2" id="mpT"></div><div class="mp3">RESPECT +1</div></div>
 
 <section id="term">
   <div class="th">
@@ -352,6 +429,7 @@ table.am .cl{display:flex;flex-direction:column;gap:4px}table.am .cl .bar{height
       <button class="tab on" data-t="markets">markets <span class="n" id="nCoins">—</span></button>
       <button class="tab" data-t="all">all markets</button>
       <button class="tab" data-t="movers">movers</button>
+      <button class="tab" data-t="city">the city</button>
       <button class="tab" data-t="map">map</button>
       <button class="tab" data-t="hub">GTA VI hub</button>
       <button class="tab" data-t="poly">polymarket <span class="n" id="nPoly">—</span></button>
@@ -360,8 +438,10 @@ table.am .cl{display:flex;flex-direction:column;gap:4px}table.am .cl .bar{height
       <button class="tab" data-t="how">how it works</button>
       <span class="qk"><span>E</span></span>
     </nav>
+    <span class="clk mono" id="clk">--:--:--</span>
     <button class="wal" id="wal"><i class="dot"></i><span id="walT">connect</span></button>
   </div>
+  <div class="tick" id="tick"><div class="trun" id="tickR"><span class="ti">loading the wire…</span></div></div>
   <div class="strip">
     <div class="st"><span>GTA coins tracked</span><b id="sCoins">—</b></div>
     <div class="st"><span>combined mcap</span><b id="sMcap">—</b></div>
@@ -392,6 +472,9 @@ table.am .cl{display:flex;flex-direction:column;gap:4px}table.am .cl .bar{height
     </div>
     <div class="pane" data-p="movers">
       <div class="box" style="flex:1"><div class="bh">movers <span class="sp"></span><small>every GTA coin, sorted six ways, live</small></div><div class="scroll"><div class="movers" id="movers"></div></div></div>
+    </div>
+    <div class="pane" data-p="city">
+      <div class="box" style="flex:1"><div class="bh">the city <span class="sp"></span><small>every GTA coin as a block · size: market cap · colour: 24h · stars: wanted level (volatility)</small></div><div class="cityw" id="city"></div></div>
     </div>
     <div class="pane" data-p="map">
       <div class="box" style="flex:1"><div class="bh">the map <span class="sp"></span><small>across: market cap · up: 24h change · size: volume · click a blip to open it</small></div><div class="mapw" id="mapw"><canvas id="mapc"></canvas><div class="mtip" id="mtip"></div></div></div>
