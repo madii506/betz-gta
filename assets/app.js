@@ -27,7 +27,7 @@ function clock() { const s = (GTA - Date.now()) / 1e3; const t = s <= 0 ? 'out n
 setInterval(clock, 1000); clock();
 
 // ---------------------------------------------------------------- state
-const S = { coins: [], byMint: {}, sel: null, sort: 'mcap', q: '', board: null, pm: null, wallet: null, prov: null, focus: 0, tf: 'm', chart: null };
+const S = { coins: [], byMint: {}, sel: null, sort: 'mcap', q: '', board: null, pm: null, wallet: null, prov: null, focus: 0, tf: 'm', chart: null, cmode: store.get('betz:cm') || 'l', watch: (() => { try { return JSON.parse(store.get('betz:watch') || '[]'); } catch (_) { return []; } })() };
 const MK = [['up', 'Higher in 24h?'], ['x2', '2x in 24h?'], ['rug', 'Halves in 24h?']];
 
 // ---------------------------------------------------------------- loading: one line, nothing else
@@ -49,15 +49,15 @@ async function loadCoins() { try { const j = await api('/api/coins'); S.coins = 
     if (!S.sel && S.coins[0]) S.sel = S.coins[0].mint; renderStats(); renderRows(); renderDet(); renderMovers(); renderMap(); renderHub(); $('#upd').textContent = 'updated ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
   catch (e) { coinsOk = true; progress(); $('#rows').innerHTML = `<div class="empty">couldn't reach Jupiter right now (${esc(e.message)}). retrying…</div>`; } }
 function ico(c, big) { return c.icon ? `<img src="${esc(c.icon)}" alt="" loading="lazy" onerror="this.outerHTML='<div class=ph>${esc((c.symbol || '?')[0])}</div>'">` : `<div class="ph">${esc((c.symbol || '?')[0])}</div>`; }
-function renderStats() { const C = S.coins; $('#sCoins').textContent = C.length; $('#nCoins').textContent = C.length; $('#sMcap').textContent = money(C.reduce((a, c) => a + c.mcap, 0)); $('#sVol').textContent = money(C.reduce((a, c) => a + c.vol24h, 0));
+function renderStats() { const C = S.coins; if (C.length && $('#fCoins')) $('#fCoins').textContent = C.length; $('#sCoins').textContent = C.length; $('#nCoins').textContent = C.length; $('#sMcap').textContent = money(C.reduce((a, c) => a + c.mcap, 0)); $('#sVol').textContent = money(C.reduce((a, c) => a + c.vol24h, 0));
   const t = S.board?.totals; $('#sOpen').textContent = t ? t.open : '—'; $('#sCallers').textContent = t ? t.callers : '—'; }
 function callsOn(m) { const o = S.board?.odds?.[m]; return o ? Object.values(o).reduce((a, x) => a + x.y + x.n, 0) : 0; }
 function upShare(m) { const o = S.board?.odds?.[m]?.up; return o && o.y + o.n ? o.y / (o.y + o.n) : null; }
 function sorted() { let C = S.coins.slice(); const q = S.q.trim().toLowerCase(); if (q) C = C.filter(c => (c.name + ' ' + c.symbol + ' ' + c.mint).toLowerCase().includes(q));
-  const k = S.sort; C.sort((a, b) => k === 'new' ? new Date(b.created || 0) - new Date(a.created || 0) : k === 'called' ? callsOn(b.mint) - callsOn(a.mint) || b.mcap - a.mcap : (b[k] ?? -1e9) - (a[k] ?? -1e9)); return C; }
-function renderRows() { const C = sorted(); if (!C.length) { $('#rows').innerHTML = '<div class="empty">no GTA coin matches that.</div>'; return; }
+  const k = S.sort; if (k === 'watch') C = C.filter(c => watching(c.mint)); C.sort((a, b) => k === 'new' ? new Date(b.created || 0) - new Date(a.created || 0) : k === 'called' ? callsOn(b.mint) - callsOn(a.mint) || b.mcap - a.mcap : (b[k === 'watch' ? 'mcap' : k] ?? -1e9) - (a[k === 'watch' ? 'mcap' : k] ?? -1e9)); return C; }
+function renderRows() { const C = sorted(); if (!C.length) { $('#rows').innerHTML = S.sort === 'watch' ? '<div class="empty">your watchlist is empty. hit ☆ watch on a coin.</div>' : '<div class="empty">no GTA coin matches that.</div>'; return; }
   $('#rows').innerHTML = C.map(c => { const u = upShare(c.mint), n = callsOn(c.mint);
-    return `<div class="row${c.mint === S.sel ? ' on' : ''}" data-m="${c.mint}">${ico(c)}<div class="nm"><b>${esc(c.name)}</b><span>$${esc(c.symbol)} · ${n} call${n === 1 ? '' : 's'}</span></div><div class="rt"><b>${money(c.mcap)}</b><br><span class="${cls(c.ch24h)}">${pct(c.ch24h)}</span>${u == null ? '' : `<div class="minibar"><i style="width:${u * 100}%"></i><u style="width:${(1 - u) * 100}%"></u></div>`}</div></div>`; }).join('');
+    return `<div class="row${c.mint === S.sel ? ' on' : ''}" data-m="${c.mint}">${ico(c)}<div class="nm"><b>${watching(c.mint) ? '<span class="stw">★</span> ' : ''}${esc(c.name)}</b><span>$${esc(c.symbol)} · ${n} call${n === 1 ? '' : 's'}</span></div><div class="rt"><b>${money(c.mcap)}</b><br><span class="${cls(c.ch24h)}">${pct(c.ch24h)}</span>${u == null ? '' : `<div class="minibar"><i style="width:${u * 100}%"></i><u style="width:${(1 - u) * 100}%"></u></div>`}</div></div>`; }).join('');
   $$('#rows .row').forEach(r => r.onclick = () => select(r.dataset.m)); }
 function select(m, scroll) { S.sel = m; S.focus = 0; $$('#rows .row').forEach(r => r.classList.toggle('on', r.dataset.m === m)); if (scroll) $(`#rows .row[data-m="${m}"]`)?.scrollIntoView({ block: 'nearest' }); renderDet(); }
 $('#q').oninput = e => { S.q = e.target.value; renderRows(); };
@@ -67,23 +67,55 @@ $$('.chip[data-s]').forEach(b => b.onclick = () => { S.sort = b.dataset.s; $$('.
 function myOpen(m, k) { return (S.board?.mine || []).find(c => c.mint === m && c.mkt === k && c.status === 'open'); }
 function renderDet() { const c = S.byMint[S.sel]; const D = $('#det'); if (!c) { D.innerHTML = '<div class="empty">pick a GTA coin.</div>'; return; }
   const odds = S.board?.odds?.[c.mint] || {};
-  D.innerHTML = `<div class="dh">${ico(c, 1)}<div><h2>${esc(c.name)}</h2><div class="sub"><span>$${esc(c.symbol)}</span><button id="cp">${short(c.mint)} ⧉</button><a href="https://pump.fun/coin/${c.mint}" target="_blank" rel="noopener">pump.fun ↗</a><a href="https://dexscreener.com/solana/${c.mint}" target="_blank" rel="noopener">chart ↗</a><a href="https://jup.ag/tokens/${c.mint}" target="_blank" rel="noopener">jup ↗</a></div></div>
+  D.innerHTML = `<div class="dh">${ico(c, 1)}<div><h2>${esc(c.name)}</h2><div class="sub"><span>$${esc(c.symbol)}</span><button id="cp">${short(c.mint)} ⧉</button><a href="https://pump.fun/coin/${c.mint}" target="_blank" rel="noopener">pump.fun ↗</a><a href="https://dexscreener.com/solana/${c.mint}" target="_blank" rel="noopener">chart ↗</a><a href="https://jup.ag/tokens/${c.mint}" target="_blank" rel="noopener">jup ↗</a>${c.twitter ? `<a href="${esc(c.twitter)}" target="_blank" rel="noopener">𝕏 ↗</a>` : ''}${c.website ? `<a href="${esc(c.website)}" target="_blank" rel="noopener">site ↗</a>` : ''}${c.dev ? `<a href="https://solscan.io/account/${esc(c.dev)}" target="_blank" rel="noopener">dev ${short(c.dev)}</a>` : ''}<button id="star">${watching(c.mint) ? '★ watching' : '☆ watch'}</button></div></div>
     <div class="px"><b>${money(c.mcap)}</b><span class="${cls(c.ch24h)}">${pct(c.ch24h)} 24h</span></div></div>
     <div class="grid"><div><span>price</span><b>${money(c.price)}</b></div><div><span>1h</span><b class="${cls(c.ch1h)}">${pct(c.ch1h)}</b></div><div><span>24h volume</span><b>${money(c.vol24h)}</b></div><div><span>holders</span><b>${(c.holders || 0).toLocaleString()}</b></div>
     <div><span>liquidity</span><b>${money(c.liq)}</b></div><div><span>buys / sells 24h</span><b>${(c.buys24h || 0).toLocaleString()} / ${(c.sells24h || 0).toLocaleString()}</b></div><div><span>launchpad</span><b>${esc(c.launchpad || '—')}</b></div><div><span>age</span><b>${c.created ? ago(new Date(c.created).getTime()) : '—'}</b></div></div>
-    <div class="chart"><div class="tf"><button class="chip${S.tf === 'm' ? ' on' : ''}" data-tf="m">15m</button><button class="chip${S.tf === 'h' ? ' on' : ''}" data-tf="h">1h</button></div><canvas id="cv"></canvas><div class="em" id="cvE">loading chart…</div></div>
+    <div class="chart"><div class="tf">${[['m', '15m'], ['h', '1h'], ['4', '4h'], ['d', '1d']].map(([k, l]) => `<button class="chip${S.tf === k ? ' on' : ''}" data-tf="${k}">${l}</button>`).join('')}<button class="chip${S.cmode === 'c' ? ' on' : ''}" id="cmode">${S.cmode === 'c' ? 'candles' : 'line'}</button></div><canvas id="cv"></canvas><div class="em" id="cvE">loading chart…</div></div>
     <div class="mkts">${MK.map(([k, q], i) => { const o = odds[k] || { y: 0, n: 0 }, n = o.y + o.n, y = n ? o.y / n : null, mine = myOpen(c.mint, k);
       return `<div class="mk${S.focus === i ? ' f' : ''}" data-k="${k}"><div class="q"><kbd>${i + 1}</kbd>${q}</div>
         <div class="od"><span class="up">YES ${y == null ? '—' : Math.round(y * 100) + '%'}</span><span class="dn">NO ${y == null ? '—' : Math.round((1 - y) * 100) + '%'}</span></div>
         <div class="bar"><i style="width:${y == null ? 0 : y * 100}%"></i><u style="width:${y == null ? 0 : (1 - y) * 100}%"></u></div>
         <div class="n">${n ? n + ' open call' + (n === 1 ? '' : 's') : 'no calls yet · be first'}</div>
         ${mine ? `<div class="mine">your call: <b class="${mine.side === 'Y' ? 'up' : 'dn'}">${mine.side === 'Y' ? 'YES' : 'NO'}</b> at ${money(mine.mcap0)} · graded in ${left(mine.due)}</div>` : `<div class="yn"><button class="y" data-side="Y">YES</button><button class="no" data-side="N">NO</button></div>`}</div>`; }).join('')}</div>
+    <div class="two"><div class="box"><div class="bh">order flow <span class="sp"></span><small>Jupiter · all pools</small></div>${flow(c)}</div>
+    <div class="box"><div class="bh">safety check <span class="sp"></span><small>${c.orgLabel ? 'organic: ' + esc(c.orgLabel) : ''}</small></div>${safety(c)}</div></div>
+    <div class="two"><div class="box"><div class="bh">what if <span class="sp"></span><small>market cap calculator</small></div><div class="calc"><label>you put in <span>$</span><input id="cIn" type="number" min="0" value="100"></label><label>it hits <span>$</span><input id="cTo" type="number" min="0" value="${Math.round((c.mcap * 5) / 1e5) * 1e5 || 1000000}"></label><div id="cOut"></div><div class="presets">${[2, 5, 10, 50].map(x => `<button class="chip" data-x="${x}">${x}x</button>`).join('')}<button class="chip" data-x="m1">$1M</button><button class="chip" data-x="m100">$100M</button></div></div></div>
+    <div class="box"><div class="bh">calls on $${esc(c.symbol)} <span class="sp"></span><small>${callsOn(c.mint)} open</small></div><div id="ccalls">${coinCalls(c)}</div></div></div>
     <div class="two"><div class="box"><div class="bh">live trades <span class="sp"></span><small>top pool · GeckoTerminal</small></div><div id="trs"><div class="empty">loading…</div></div></div>
     <div class="box"><div class="bh">top holders <span class="sp"></span><small id="t10"></small></div><div id="hds"><div class="empty">loading…</div></div></div></div>`;
   $('#cp').onclick = () => { navigator.clipboard?.writeText(c.mint); toast('contract copied'); };
+  $('#star').onclick = () => { toggleWatch(c.mint); renderDet(); renderRows(); };
+  $('#cmode').onclick = () => { S.cmode = S.cmode === 'c' ? 'l' : 'c'; store.set('betz:cm', S.cmode); renderDet(); };
+  const calc = () => { const a = +$('#cIn').value || 0, t = +$('#cTo').value || 0, x = c.mcap ? t / c.mcap : 0; $('#cOut').innerHTML = `<b class="${x >= 1 ? 'up' : 'dn'}">${money(a * x)}</b><span>${x ? x.toFixed(x >= 10 ? 0 : 2) + 'x from ' + money(c.mcap) : '—'}</span>`; };
+  $('#cIn').oninput = calc; $('#cTo').oninput = calc; $$('.calc .chip').forEach(b => b.onclick = () => { const v = b.dataset.x; $('#cTo').value = v === 'm1' ? 1e6 : v === 'm100' ? 1e8 : Math.round(c.mcap * +v); calc(); }); calc();
   $$('#det .chip[data-tf]').forEach(b => b.onclick = () => { S.tf = b.dataset.tf; renderDet(); });
   $$('#det .mk').forEach((el, i) => { el.onmouseenter = () => focusMk(i); $$('button[data-side]', el).forEach(b => b.onclick = () => slip(c, el.dataset.k, b.dataset.side)); });
   drawChart(c.mint); extras(c.mint); }
+function flow(c) { const S2 = c.st || {}; const rows = [['m5', '5m'], ['h1', '1h'], ['h6', '6h'], ['h24', '24h']];
+  const n = v => v == null ? '—' : (+v).toLocaleString(); const d = v => v == null ? '—' : `<span class="${cls(v)}">${pct(v)}</span>`;
+  return `<table class="ft2"><thead><tr><th></th>${rows.map(r => `<th>${r[1]}</th>`).join('')}</tr></thead><tbody>
+    <tr><td>price</td>${rows.map(r => `<td>${d(S2[r[0]]?.pc)}</td>`).join('')}</tr>
+    <tr><td>volume</td>${rows.map(r => `<td>${money(S2[r[0]]?.vol || 0)}</td>`).join('')}</tr>
+    <tr><td>buy / sell $</td>${rows.map(r => { const x = S2[r[0]] || {}, t = (x.bv || 0) + (x.sv || 0); return `<td><div class="bs"><i style="width:${t ? x.bv / t * 100 : 50}%"></i></div></td>`; }).join('')}</tr>
+    <tr><td>buys / sells</td>${rows.map(r => `<td>${n(S2[r[0]]?.buys)} / ${n(S2[r[0]]?.sells)}</td>`).join('')}</tr>
+    <tr><td>traders</td>${rows.map(r => `<td>${n(S2[r[0]]?.traders)}</td>`).join('')}</tr>
+    <tr><td>net buyers</td>${rows.map(r => `<td>${n(S2[r[0]]?.net)}</td>`).join('')}</tr>
+    <tr><td>holders</td>${rows.map(r => `<td>${d(S2[r[0]]?.hc)}</td>`).join('')}</tr>
+    <tr><td>liquidity</td>${rows.map(r => `<td>${d(S2[r[0]]?.lc)}</td>`).join('')}</tr></tbody></table>`; }
+function safety(c) { const a = c.audit || {}; const row = (ok, label, val) => `<div class="sf"><i class="${ok === null ? 'q' : ok ? 'ok' : 'no'}">${ok === null ? '?' : ok ? '✓' : '!'}</i><span>${label}</span><b>${val}</b></div>`;
+  const th = a.topHoldersPercentage, dv = a.devBalancePercentage;
+  return `<div class="sfs">${row(a.mintAuthorityDisabled ?? null, 'mint authority', a.mintAuthorityDisabled ? 'revoked' : a.mintAuthorityDisabled === false ? 'ACTIVE' : '—')}
+    ${row(a.freezeAuthorityDisabled ?? null, 'freeze authority', a.freezeAuthorityDisabled ? 'revoked' : a.freezeAuthorityDisabled === false ? 'ACTIVE' : '—')}
+    ${row(th == null ? null : th < 30, 'top holders own', th == null ? '—' : th.toFixed(1) + '%')}
+    ${row(dv == null ? null : dv < 5, 'dev holds', dv == null ? '—' : dv.toFixed(2) + '%')}
+    ${row(a.devMints == null ? null : a.devMints < 10, 'coins this dev made', a.devMints ?? '—')}
+    ${row(c.liq ? c.liq > 20000 : null, 'liquidity', money(c.liq))}
+    ${row(c.grad ? true : c.launchpad ? null : null, 'bonding curve', c.grad ? 'graduated ' + ago(new Date(c.grad).getTime()) + ' ago' : 'on curve / n.a.')}
+    ${row(c.isVerified || (c.tags || []).includes('verified') ? true : null, 'Jupiter verified', c.isVerified || (c.tags || []).includes('verified') ? 'yes' : 'no')}</div>`; }
+function coinCalls(c) { const R = (S.board?.recent || []).filter(x => x.mint === c.mint); return R.length ? R.slice(0, 8).map(x => `<div class="fi"><span class="pill ${x.side}">${x.side === 'Y' ? 'YES' : 'NO'}</span><span>${mq(x.mkt)}<br><span class="when">${short(x.wallet)} at ${money(x.mcap0)}</span></span><span class="when">${x.status === 'open' ? ago(x.ts) : `<span class="pill ${x.status}">${x.status}</span>`}</span></div>`).join('') : '<div class="empty">no calls on this coin yet. be first.</div>'; }
+function watching(m) { return (S.watch || []).includes(m); }
+function toggleWatch(m) { S.watch = watching(m) ? S.watch.filter(x => x !== m) : [...(S.watch || []), m]; store.set('betz:watch', JSON.stringify(S.watch)); toast(watching(m) ? 'added to watchlist' : 'removed from watchlist'); }
 function focusMk(i) { S.focus = i; $$('#det .mk').forEach((el, k) => el.classList.toggle('f', k === i)); }
 async function drawChart(mint) { const cv = $('#cv'), E = $('#cvE'); if (!cv) return; const key = mint + S.tf; let d = S.chart?.key === key ? S.chart.d : null;
   if (!d) { try { d = await api(`/api/chart?mint=${mint}&tf=${S.tf}`); S.chart = { key, d }; } catch (e) { d = { candles: [] }; } }
@@ -93,8 +125,9 @@ async function drawChart(mint) { const cv = $('#cv'), E = $('#cvE'); if (!cv) re
   const up = C[C.length - 1].c >= C[0].o, col = up ? '#2fe0a8' : '#ff5a6a';
   g.strokeStyle = 'rgba(255,246,242,.07)'; g.lineWidth = 1; for (let k = 0; k < 4; k++) { const y = pad + 18 + k * (Hh - pad * 2 - 30) / 3; g.beginPath(); g.moveTo(pad, y); g.lineTo(W - pad - 54, y); g.stroke(); g.fillStyle = 'rgba(255,246,242,.38)'; g.font = '500 10px JB'; g.fillText(money(hi - k * (hi - lo) / 3), W - pad - 50, y + 3); }
   const grd = g.createLinearGradient(0, 0, 0, Hh); grd.addColorStop(0, up ? 'rgba(47,224,168,.32)' : 'rgba(255,90,106,.32)'); grd.addColorStop(1, 'rgba(0,0,0,0)');
-  g.beginPath(); C.forEach((x, i) => i ? g.lineTo(X(i), Y(x.c)) : g.moveTo(X(i), Y(x.c))); g.lineTo(X(C.length - 1), Hh); g.lineTo(X(0), Hh); g.closePath(); g.fillStyle = grd; g.fill();
-  g.beginPath(); C.forEach((x, i) => i ? g.lineTo(X(i), Y(x.c)) : g.moveTo(X(i), Y(x.c))); g.strokeStyle = col; g.lineWidth = 2; g.shadowColor = col; g.shadowBlur = 10; g.stroke(); g.shadowBlur = 0;
+  if (S.cmode === 'c') { const bw = Math.max(1, (W - pad * 2 - 54) / C.length * .66); C.forEach((x, i) => { const u = x.c >= x.o; g.strokeStyle = g.fillStyle = u ? '#2fe0a8' : '#ff5a6a'; g.beginPath(); g.moveTo(X(i), Y(x.h)); g.lineTo(X(i), Y(x.l)); g.stroke(); const y0 = Y(Math.max(x.o, x.c)), y1 = Y(Math.min(x.o, x.c)); g.fillRect(X(i) - bw / 2, y0, bw, Math.max(1, y1 - y0)); }); }
+  else { g.beginPath(); C.forEach((x, i) => i ? g.lineTo(X(i), Y(x.c)) : g.moveTo(X(i), Y(x.c))); g.lineTo(X(C.length - 1), Hh); g.lineTo(X(0), Hh); g.closePath(); g.fillStyle = grd; g.fill();
+  g.beginPath(); C.forEach((x, i) => i ? g.lineTo(X(i), Y(x.c)) : g.moveTo(X(i), Y(x.c))); g.strokeStyle = col; g.lineWidth = 2; g.shadowColor = col; g.shadowBlur = 10; g.stroke(); g.shadowBlur = 0; }
   const lx = X(C.length - 1), ly = Y(C[C.length - 1].c); g.fillStyle = col; g.beginPath(); g.arc(lx, ly, 4, 0, 7); g.fill();
   const img = g.getImageData(0, 0, cv.width, cv.height);
   cv.onmousemove = e => { const b = cv.getBoundingClientRect(), mx = e.clientX - b.left, i = Math.max(0, Math.min(C.length - 1, Math.round((mx - pad) / (W - pad * 2 - 54) * (C.length - 1)))); g.putImageData(img, 0, 0); g.save(); g.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -146,7 +179,7 @@ function renderHub() { const C = S.coins, B = S.board, E = (S.pm?.events || []).
 
 // ---------------------------------------------------------------- board, feed, my calls
 async function loadBoard() { try { S.board = await api('/api/board' + (S.wallet ? '?wallet=' + S.wallet : '')); renderStats(); renderFeed(); renderBoard(); renderMine(); renderRows(); if (S.tab === 'hub') renderHub(); if (!document.activeElement?.closest?.('#det')) renderDetSoft(); } catch (e) { $('#feed').innerHTML = `<div class="empty">calls are offline: ${esc(e.message)}</div>`; } }
-function renderDetSoft() { const c = S.byMint[S.sel]; if (!c || !$('#det .mkts')) return renderDet(); const odds = S.board?.odds?.[c.mint] || {};
+function renderDetSoft() { const c = S.byMint[S.sel]; if (!c || !$('#det .mkts')) return renderDet(); const odds = S.board?.odds?.[c.mint] || {}; if ($('#ccalls')) $('#ccalls').innerHTML = coinCalls(c);
   $$('#det .mk').forEach(el => { const k = el.dataset.k, o = odds[k] || { y: 0, n: 0 }, n = o.y + o.n, y = n ? o.y / n : null; $('.od', el).innerHTML = `<span class="up">YES ${y == null ? '—' : Math.round(y * 100) + '%'}</span><span class="dn">NO ${y == null ? '—' : Math.round((1 - y) * 100) + '%'}</span>`;
     $('.bar i', el).style.width = (y == null ? 0 : y * 100) + '%'; $('.bar u', el).style.width = (y == null ? 0 : (1 - y) * 100) + '%'; $('.n', el).textContent = n ? n + ' open call' + (n === 1 ? '' : 's') : 'no calls yet · be first'; }); }
 const mq = k => (MK.find(m => m[0] === k) || [, k])[1];
@@ -154,14 +187,15 @@ function renderFeed() { const R = S.board?.recent || []; $('#nRecent').textConte
   if (!S.board?.store) { $('#feed').innerHTML = '<div class="empty">calls open the moment storage is connected.</div>'; return; }
   $('#feed').innerHTML = R.length ? R.map(c => { const k = S.byMint[c.mint]; return `<div class="fi"><span class="pill ${c.side}">${c.side === 'Y' ? 'YES' : 'NO'}</span><span><b>$${esc(k?.symbol || short(c.mint))}</b> · ${mq(c.mkt)}<br><span class="when">${short(c.wallet)} at ${money(c.mcap0)}</span></span><span class="when">${c.status === 'open' ? ago(c.ts) : `<span class="pill ${c.status}">${c.status}</span>`}</span></div>`; }).join('') : '<div class="empty">no calls yet. the first one lands here.</div>'; }
 function renderBoard() { const B = S.board?.board || []; if (!B.length) { $('#board').innerHTML = '<div class="empty">no graded calls yet. the first winners show up 24 hours after the first calls.</div>'; return; }
-  $('#board').innerHTML = `<table><thead><tr><th>#</th><th>caller</th><th>won</th><th>lost</th><th>open</th><th>accuracy</th><th>best streak</th></tr></thead><tbody>${B.map((w, i) => `<tr class="${w.wallet === S.wallet ? 'me' : ''}"><td class="rk">${i + 1}</td><td>${short(w.wallet)}</td><td class="up">${w.won}</td><td class="dn">${w.lost}</td><td>${w.open}</td><td>${w.acc == null ? '—' : Math.round(w.acc * 100) + '%'}</td><td>${w.best}</td></tr>`).join('')}</tbody></table>`; }
+  const T = S.board?.totals || {}, best = B.filter(w => w.won + w.lost >= 3).sort((a, b) => b.acc - a.acc)[0];
+  $('#board').innerHTML = `<div class="bsum"><div><span>calls made</span><b>${T.calls || 0}</b></div><div><span>graded</span><b>${T.graded || 0}</b></div><div><span>callers</span><b>${T.callers || 0}</b></div><div><span>sharpest (3+ graded)</span><b>${best ? short(best.wallet) + ' · ' + Math.round(best.acc * 100) + '%' : '—'}</b></div></div><table><thead><tr><th>#</th><th>caller</th><th>won</th><th>lost</th><th>open</th><th>accuracy</th><th>best streak</th></tr></thead><tbody>${B.map((w, i) => `<tr class="${w.wallet === S.wallet ? 'me' : ''}"><td class="rk">${i + 1}</td><td>${short(w.wallet)}</td><td class="up">${w.won}</td><td class="dn">${w.lost}</td><td>${w.open}</td><td>${w.acc == null ? '—' : Math.round(w.acc * 100) + '%'}</td><td>${w.best}</td></tr>`).join('')}</tbody></table>`; }
 function renderMine() { const M = S.board?.mine || []; $('#nMine').textContent = M.length;
   if (!S.wallet) { $('#mine').innerHTML = '<div class="empty">connect a wallet to see your calls.</div>'; $('#mineSum').textContent = ''; return; }
   const w = M.filter(c => c.status === 'won').length, l = M.filter(c => c.status === 'lost').length; $('#mineSum').textContent = `${M.length} calls · ${w} won · ${l} lost`;
   $('#mine').innerHTML = M.length ? M.map(c => { const k = S.byMint[c.mint]; return `<div class="fi"><span class="pill ${c.side}">${c.side === 'Y' ? 'YES' : 'NO'}</span><span><b>$${esc(k?.symbol || short(c.mint))}</b> · ${mq(c.mkt)}<br><span class="when">called at ${money(c.mcap0)}${c.mcap1 ? ' · graded at ' + money(c.mcap1) : ''}</span></span><span class="when">${c.status === 'open' ? 'graded in ' + left(c.due) : `<span class="pill ${c.status}">${c.status}</span>`}</span></div>`; }).join('') : '<div class="empty">no calls yet. pick a GTA coin and hit YES or NO.</div>'; }
 
 // ---------------------------------------------------------------- polymarket
-async function loadPM() { try { S.pm = await api('/api/pm'); const E = S.pm.events || []; $('#nPoly').textContent = E.length; if (S.tab === 'hub') renderHub();
+async function loadPM() { try { S.pm = await api('/api/pm'); const E = S.pm.events || []; $('#nPoly').textContent = E.length; if (E.length && $('#fPm')) $('#fPm').textContent = E.length; if (S.tab === 'hub') renderHub();
     $('#pm').innerHTML = E.length ? E.map(e => `<div class="ev"><div class="t">${e.image ? `<img src="${esc(e.image)}" alt="" loading="lazy">` : ''}<h3>${esc(e.title)}</h3></div>
       ${e.markets.slice(0, 4).map(m => `<div class="m"><span>${esc(m.label || m.q)}</span><b>${Math.round(m.yes * 100)}%</b><div class="bar"><i style="width:${m.yes * 100}%"></i><u style="width:${(1 - m.yes) * 100}%"></u></div></div>`).join('')}
       <div class="meta"><span>vol ${money(e.vol)}</span><span>${e.end ? 'ends ' + new Date(e.end).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) : ''}</span></div>
@@ -176,12 +210,35 @@ addEventListener('keydown', e => { if ((e.metaKey || e.ctrlKey) && e.key.toLower
   const k = e.key.toLowerCase();
   if (!H.classList.contains('term')) { if (k === 'enter') openTerm(); return; }
   if (k === 'escape') return openHome();
+  if ((e.key === ':' || e.key === '`') && S.tab !== 'markets') { e.preventDefault(); $('#cmdI').focus(); return; }
   if (k === 'q' || k === 'e') { const i = TABS.indexOf(S.tab); tab(TABS[(i + (k === 'e' ? 1 : TABS.length - 1)) % TABS.length]); return; }
   if (S.tab !== 'markets') return;
   if (k === 'arrowdown' || k === 'arrowup') { e.preventDefault(); const C = sorted(), i = C.findIndex(c => c.mint === S.sel), n = C[Math.max(0, Math.min(C.length - 1, i + (k === 'arrowdown' ? 1 : -1)))]; if (n) select(n.mint, 1); }
   if (k === '1' || k === '2' || k === '3') focusMk(+k - 1);
   if (k === '/') { e.preventDefault(); $('#q').focus(); }
+  if (e.key === ':' || e.key === '`') { e.preventDefault(); $('#cmdI').focus(); }
   if (k === 'y' || k === 'n') { const c = S.byMint[S.sel]; if (c && !myOpen(c.mint, MK[S.focus][0])) slip(c, MK[S.focus][0], k === 'y' ? 'Y' : 'N'); } });
+
+// ---------------------------------------------------------------- the command line
+const findCoin = q => { q = (q || '').replace(/^\$/, '').toLowerCase(); return S.coins.find(c => c.symbol.toLowerCase() === q) || S.coins.find(c => c.name.toLowerCase().includes(q)) || S.coins.find(c => c.mint.toLowerCase().startsWith(q)); };
+const HELP = 'open <coin> · call <coin> <up|2x|rug> <yes|no> · price <coin> · watch <coin> · sort <mcap|24h|volume|new|called|watch> · markets · movers · map · hub · poly · board · mine · how · connect · home';
+const hist = []; let hi = 0;
+function run(line) { const a = line.trim().split(/\s+/), c0 = (a[0] || '').toLowerCase(), out = m => $('#cmdO').textContent = m; if (!c0) return; hist.unshift(line); hi = -1;
+  const tabsMap = { markets: 'markets', movers: 'movers', map: 'map', hub: 'hub', gta: 'hub', poly: 'poly', polymarket: 'poly', board: 'board', leaderboard: 'board', mine: 'mine', calls: 'mine', how: 'how', help2: 'how' };
+  if (c0 === 'help' || c0 === '?') return out(HELP);
+  if (tabsMap[c0]) { tab(tabsMap[c0]); return out('→ ' + tabsMap[c0]); }
+  if (c0 === 'home' || c0 === 'exit') { openHome(); return; }
+  if (c0 === 'connect') { connect(); return out('opening wallets…'); }
+  if (c0 === 'sort') { const k = { mcap: 'mcap', '24h': 'ch24h', volume: 'vol24h', vol: 'vol24h', new: 'new', called: 'called', watch: 'watch' }[(a[1] || '').toLowerCase()]; if (!k) return out('sort by: mcap 24h volume new called watch'); tab('markets'); S.sort = k; $$('.chip[data-s]').forEach(x => x.classList.toggle('on', x.dataset.s === k)); renderRows(); return out('sorted by ' + a[1]); }
+  const c = findCoin(a[1]); if (['open', 'price', 'watch', 'call'].includes(c0) && !c) return out('no GTA coin called "' + (a[1] || '') + '"');
+  if (c0 === 'open') { tab('markets'); select(c.mint, 1); return out(`$${c.symbol} · ${money(c.mcap)} · ${pct(c.ch24h)} 24h`); }
+  if (c0 === 'price') return out(`$${c.symbol}  price ${money(c.price)}  mcap ${money(c.mcap)}  1h ${pct(c.ch1h)}  24h ${pct(c.ch24h)}  holders ${(c.holders || 0).toLocaleString()}`);
+  if (c0 === 'watch') { toggleWatch(c.mint); renderRows(); return out((watching(c.mint) ? 'watching $' : 'stopped watching $') + c.symbol); }
+  if (c0 === 'call') { const k = { up: 'up', higher: 'up', '2x': 'x2', x2: 'x2', rug: 'rug', halves: 'rug' }[(a[2] || '').toLowerCase()], sd = (a[3] || '').toLowerCase(); if (!k || !['yes', 'no', 'y', 'n'].includes(sd)) return out('usage: call <coin> <up|2x|rug> <yes|no>');
+    tab('markets'); select(c.mint, 1); if (myOpen(c.mint, k)) return out('you already have an open call on that market'); slip(c, k, sd[0] === 'y' ? 'Y' : 'N'); return out('sign the slip to lock it'); }
+  out('unknown command. type help'); }
+$('#cmd').onsubmit = e => { e.preventDefault(); const i = $('#cmdI'); run(i.value); i.value = ''; };
+$('#cmdI').onkeydown = e => { if (e.key === 'ArrowUp' && hist.length) { e.preventDefault(); hi = Math.min(hist.length - 1, hi + 1); e.target.value = hist[hi]; } if (e.key === 'ArrowDown') { e.preventDefault(); hi = Math.max(-1, hi - 1); e.target.value = hi < 0 ? '' : hist[hi]; } if (e.key === 'Escape') e.target.blur(); };
 
 // ---------------------------------------------------------------- ⌘K palette
 let palSel = 0, palItems = [];
