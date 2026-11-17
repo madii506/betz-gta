@@ -10,7 +10,7 @@ const WORDS = /gta|grand ?theft|vice ?city|lucia|leonida|rockstar|duval|wasted|h
 function norm(t) { const s24 = t.stats24h || {}, s1 = t.stats1h || {};
   return { mint: t.id, name: t.name, symbol: t.symbol, icon: t.icon || null, launchpad: t.launchpad || null, mcap: t.mcap || 0, fdv: t.fdv || 0, price: t.usdPrice || 0, liq: t.liquidity || 0,
     holders: t.holderCount || 0, ch1h: s1.priceChange ?? null, ch24h: s24.priceChange ?? null, vol24h: (s24.buyVolume || 0) + (s24.sellVolume || 0), buys24h: s24.numBuys || 0, sells24h: s24.numSells || 0,
-    created: t.createdAt || (t.firstPool && t.firstPool.createdAt) || null, organic: t.organicScore || 0, verified: !!(t.audit && t.audit.isSus === false) }; }
+    supply: +(t.totalSupply || t.circSupply || 0), created: t.createdAt || (t.firstPool && t.firstPool.createdAt) || null, organic: t.organicScore || 0, verified: !!(t.audit && t.audit.isSus === false) }; }
 async function gtaCoins() { return cached('coins', 30000, async () => {
   const lists = await Promise.allSettled(QUERIES.map(q => getJSON(JUP + encodeURIComponent(q))));
   const seen = new Map();
