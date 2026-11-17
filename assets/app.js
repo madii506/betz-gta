@@ -33,34 +33,47 @@ const MK = [['up', 'Higher in 24h?'], ['p50', '+50% in 24h?'], ['x2', '2x in 24h
 // ---------------------------------------------------------------- loading: one line, nothing else
 let sceneOk = false, coinsOk = false; const lb = $('#lbar');
 function progress() { lb.style.width = ((sceneOk ? 60 : 18) + (coinsOk ? 40 : 0)) * 2.4 + 'px'; if (sceneOk && coinsOk) done(); }
-function done() { if (done.d) return; done.d = 1; setTimeout(() => { $('#load').classList.add('out'); H.classList.add('go'); if (location.hash === '#terminal') openTerm(); }, 400); }
+function done() { if (done.d) return; done.d = 1; setTimeout(() => { $('#load').classList.add('out'); H.classList.add('go'); if (location.hash === '#terminal') { openTerm(); loadTicker(); } }, 400); }
 addEventListener('betz:scene', () => { sceneOk = true; progress(); });
 setTimeout(() => { sceneOk = true; coinsOk = true; progress(); }, 9000);
 progress();
 
 // ---------------------------------------------------------------- home <-> terminal
-function openTerm() { H.classList.add('term'); window.betzScene?.mode('term'); if (location.hash !== '#terminal') history.replaceState(null, '', '#terminal'); }
+function openTerm() { if (!H.classList.contains('term')) { const w = $('#wipe'); w.classList.remove('go'); void w.offsetWidth; w.classList.add('go'); } H.classList.add('term'); window.betzScene?.mode('term'); if (location.hash !== '#terminal') history.replaceState(null, '', '#terminal'); }
 function openHome() { H.classList.remove('term'); window.betzScene?.mode('home'); history.replaceState(null, '', location.pathname); }
-$('#enter').onclick = openTerm; $('#toHome').onclick = openHome;
+$('#enter').onclick = () => { openTerm(); loadTicker(); }; $('#toHome').onclick = openHome;
 $('#hconn').onclick = () => connect(); $('#wal').onclick = () => S.wallet ? disconnect() : connect();
 
 // ---------------------------------------------------------------- the GTA money counter on the street
 let cashV = 0; function cashTo(v) { const a = cashV, t0 = performance.now(); const step = t => { const k = Math.min(1, (t - t0) / 1600), e = 1 - Math.pow(1 - k, 3); cashV = a + (v - a) * e; $('#cash').textContent = '$' + Math.round(cashV).toLocaleString('en-US'); if (k < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); }
 
 // ---------------------------------------------------------------- coins
-async function loadCoins() { try { const j = await api('/api/coins'); S.coins = j.coins || []; S.byMint = Object.fromEntries(S.coins.map(c => [c.mint, c])); coinsOk = true; progress();
-    if (!S.sel && S.coins[0]) S.sel = S.coins[0].mint; renderStats(); renderRows(); renderDet(); renderMovers(); renderMap(); renderHub(); $('#upd').textContent = 'updated ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
+async function loadCoins() { try { const j = await api('/api/coins'); S.prev = Object.fromEntries((S.coins || []).map(c => [c.mint, c.mcap])); S.coins = j.coins || []; S.byMint = Object.fromEntries(S.coins.map(c => [c.mint, c])); coinsOk = true; progress();
+    if (!S.sel && S.coins[0]) S.sel = S.coins[0].mint; renderStats(); renderRows(true); if (!$('#det .mkts')) renderDet(); else softHead(); renderMovers(); renderMap(); renderHub(); if (S.tab === 'city') renderCity(); $('#upd').textContent = 'updated ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
   catch (e) { coinsOk = true; progress(); $('#rows').innerHTML = `<div class="empty">couldn't reach Jupiter right now (${esc(e.message)}). retrying…</div>`; } }
 function ico(c, big) { return c.icon ? `<img src="${esc(c.icon)}" alt="" loading="lazy" onerror="this.outerHTML='<div class=ph>${esc((c.symbol || '?')[0])}</div>'">` : `<div class="ph">${esc((c.symbol || '?')[0])}</div>`; }
-function renderStats() { const C = S.coins; if (C.length && $('#cash')) cashTo(C.reduce((x, c) => x + c.mcap, 0)); if (C.length && $('#fCoins')) $('#fCoins').textContent = C.length; $('#sCoins').textContent = C.length; $('#nCoins').textContent = C.length; $('#sMcap').textContent = money(C.reduce((a, c) => a + c.mcap, 0)); $('#sVol').textContent = money(C.reduce((a, c) => a + c.vol24h, 0));
+function renderStats() { const C = S.coins; if (C.length && $('#fCoins')) $('#fCoins').textContent = C.length; $('#sCoins').textContent = C.length; $('#nCoins').textContent = C.length; countUp($('#sMcap'), C.reduce((a, c) => a + c.mcap, 0), money); countUp($('#sVol'), C.reduce((a, c) => a + c.vol24h, 0), money);
   const t = S.board?.totals; $('#sOpen').textContent = t ? t.open : '—'; $('#sCallers').textContent = t ? t.callers : '—'; }
+// ---------------------------------------------------------------- wanted level, sparkline, rank
+function heat(c) { const v = Math.max(Math.abs(c.ch24h || 0), Math.abs(c.st?.h1?.pc || c.ch1h || 0) * 4); return v >= 120 ? 5 : v >= 60 ? 4 : v >= 30 ? 3 : v >= 15 ? 2 : v >= 5 ? 1 : 0; }
+function wanted(c) { const h = heat(c); return `<span class="wanted" title="wanted level: how wild it moves">${[0, 1, 2, 3, 4].map(i => `<i class="${i < h ? 'on' : ''}">★</i>`).join('')}</span>`; }
+function spark(c) { const st = c.st || {}, p = c.price || 1; const at = pc => pc == null ? null : p / (1 + pc / 100); let pts = [at(st.h24?.pc ?? c.ch24h), at(st.h6?.pc), at(st.h1?.pc ?? c.ch1h), at(st.m5?.pc), p];
+  pts = pts.map((v, i) => v == null ? null : v); for (let i = 0; i < pts.length; i++) if (pts[i] == null) pts[i] = pts[i - 1] ?? pts.find(x => x != null);
+  const lo = Math.min(...pts), hi = Math.max(...pts), xs = [0, 30, 50, 60, 64], Y = v => 22 - (v - lo) / (hi - lo || 1) * 18; const up = pts[4] >= pts[0], col = up ? '#2fe0a8' : '#ff5a6a';
+  const d = pts.map((v, i) => (i ? 'L' : 'M') + xs[i] + ' ' + Y(v).toFixed(1)).join(' ');
+  return `<svg class="spk" viewBox="0 0 64 26" preserveAspectRatio="none"><path d="${d} L64 26 L0 26Z" fill="${col}" opacity=".14"/><path d="${d}" fill="none" stroke="${col}" stroke-width="1.6" stroke-linejoin="round"/><circle cx="64" cy="${Y(pts[4]).toFixed(1)}" r="2" fill="${col}"/></svg>`; }
+const TIERS = [[0, 'rookie'], [1, 'runner'], [5, 'hustler'], [15, 'made'], [40, 'kingpin']];
+function tier(won) { let t = 0; TIERS.forEach((x, i) => { if (won >= x[0]) t = i; }); return `<span class="tier t${t}">${TIERS[t][1]}</span>`; }
+function countUp(el, to, fmt) { if (!el) return; const from = +el.dataset.v || 0, t0 = performance.now(); el.dataset.v = to; const step = t => { const k = Math.min(1, (t - t0) / 900), e = 1 - Math.pow(1 - k, 3); el.textContent = fmt(from + (to - from) * e); if (k < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); }
+function softHead() { const c = S.byMint[S.sel]; if (!c) return; const b = $('#det .dh .px b'); if (b) countUp(b, c.mcap, money); }
 function callsOn(m) { const o = S.board?.odds?.[m]; return o ? Object.values(o).reduce((a, x) => a + x.y + x.n, 0) : 0; }
 function upShare(m) { const o = S.board?.odds?.[m]?.up; return o && o.y + o.n ? o.y / (o.y + o.n) : null; }
 function sorted() { let C = S.coins.slice(); const q = S.q.trim().toLowerCase(); if (q) C = C.filter(c => (c.name + ' ' + c.symbol + ' ' + c.mint).toLowerCase().includes(q));
   const k = S.sort; if (k === 'watch') C = C.filter(c => watching(c.mint)); C.sort((a, b) => k === 'new' ? new Date(b.created || 0) - new Date(a.created || 0) : k === 'called' ? callsOn(b.mint) - callsOn(a.mint) || b.mcap - a.mcap : (b[k === 'watch' ? 'mcap' : k] ?? -1e9) - (a[k === 'watch' ? 'mcap' : k] ?? -1e9)); return C; }
-function renderRows() { const C = sorted(); if (!C.length) { $('#rows').innerHTML = S.sort === 'watch' ? '<div class="empty">your watchlist is empty. hit ☆ watch on a coin.</div>' : '<div class="empty">no GTA coin matches that.</div>'; return; }
+function renderRows(flash) { const C = sorted(); if (!C.length) { $('#rows').innerHTML = S.sort === 'watch' ? '<div class="empty">your watchlist is empty. hit ☆ watch on a coin.</div>' : '<div class="empty">no GTA coin matches that.</div>'; return; }
   $('#rows').innerHTML = C.map(c => { const u = upShare(c.mint), n = callsOn(c.mint);
-    return `<div class="row${c.mint === S.sel ? ' on' : ''}" data-m="${c.mint}">${ico(c)}<div class="nm"><b>${watching(c.mint) ? '<span class="stw">★</span> ' : ''}${esc(c.name)}</b><span>$${esc(c.symbol)} · ${n} call${n === 1 ? '' : 's'}</span></div><div class="rt"><b>${money(c.mcap)}</b><br><span class="${cls(c.ch24h)}">${pct(c.ch24h)}</span>${u == null ? '' : `<div class="minibar"><i style="width:${u * 100}%"></i><u style="width:${(1 - u) * 100}%"></u></div>`}</div></div>`; }).join('');
+    const pv = flash && S.prev ? S.prev[c.mint] : null, fl = pv && c.mcap !== pv ? (c.mcap > pv ? ' fu' : ' fd') : '';
+    return `<div class="row${c.mint === S.sel ? ' on' : ''}${fl}" data-m="${c.mint}">${ico(c)}<div class="nm"><b>${watching(c.mint) ? '<span class="stw">★</span> ' : ''}${esc(c.name)}</b><span>$${esc(c.symbol)}${wanted(c)}${n ? ' · ' + n : ''}</span></div>${spark(c)}<div class="rt"><b>${money(c.mcap)}</b><br><span class="${cls(c.ch24h)}">${pct(c.ch24h)}</span>${u == null ? '' : `<div class="minibar"><i style="width:${u * 100}%"></i><u style="width:${(1 - u) * 100}%"></u></div>`}</div></div>`; }).join('');
   $$('#rows .row').forEach(r => r.onclick = () => select(r.dataset.m)); }
 function select(m, scroll) { S.sel = m; S.focus = 0; $$('#rows .row').forEach(r => r.classList.toggle('on', r.dataset.m === m)); if (scroll) $(`#rows .row[data-m="${m}"]`)?.scrollIntoView({ block: 'nearest' }); renderDet(); }
 $('#q').oninput = e => { S.q = e.target.value; renderRows(); };
@@ -71,7 +84,7 @@ function myOpen(m, k) { return (S.board?.mine || []).find(c => c.mint === m && c
 function renderDet() { const c = S.byMint[S.sel]; const D = $('#det'); if (!c) { D.innerHTML = '<div class="empty">pick a GTA coin.</div>'; return; }
   const odds = S.board?.odds?.[c.mint] || {};
   D.innerHTML = `<div class="dh">${ico(c, 1)}<div><h2>${esc(c.name)}</h2><div class="sub"><span>$${esc(c.symbol)}</span><button id="cp">${short(c.mint)} ⧉</button><a href="https://pump.fun/coin/${c.mint}" target="_blank" rel="noopener">pump.fun ↗</a><a href="https://dexscreener.com/solana/${c.mint}" target="_blank" rel="noopener">chart ↗</a><a href="https://jup.ag/tokens/${c.mint}" target="_blank" rel="noopener">jup ↗</a>${c.twitter ? `<a href="${esc(c.twitter)}" target="_blank" rel="noopener">𝕏 ↗</a>` : ''}${c.website ? `<a href="${esc(c.website)}" target="_blank" rel="noopener">site ↗</a>` : ''}${c.dev ? `<a href="https://solscan.io/account/${esc(c.dev)}" target="_blank" rel="noopener">dev ${short(c.dev)}</a>` : ''}<button id="star">${watching(c.mint) ? '★ watching' : '☆ watch'}</button></div></div>
-    <div class="px"><b>${money(c.mcap)}</b><span class="${cls(c.ch24h)}">${pct(c.ch24h)} 24h</span></div></div>
+    <div class="px"><div class="wl2">WANTED ${wanted(c)}</div><b data-v="${c.mcap}">${money(c.mcap)}</b><span class="${cls(c.ch24h)}">${pct(c.ch24h)} 24h</span></div></div>
     <div class="grid"><div><span>price</span><b>${money(c.price)}</b></div><div><span>1h</span><b class="${cls(c.ch1h)}">${pct(c.ch1h)}</b></div><div><span>24h volume</span><b>${money(c.vol24h)}</b></div><div><span>holders</span><b>${(c.holders || 0).toLocaleString()}</b></div>
     <div><span>liquidity</span><b>${money(c.liq)}</b></div><div><span>buys / sells 24h</span><b>${(c.buys24h || 0).toLocaleString()} / ${(c.sells24h || 0).toLocaleString()}</b></div><div><span>launchpad</span><b>${esc(c.launchpad || '—')}</b></div><div><span>age</span><b>${c.created ? ago(new Date(c.created).getTime()) : '—'}</b></div></div>
     <div class="chart"><div class="tf">${[['m', '15m'], ['h', '1h'], ['4', '4h'], ['d', '1d']].map(([k, l]) => `<button class="chip${S.tf === k ? ' on' : ''}" data-tf="${k}">${l}</button>`).join('')}<button class="chip${S.cmode === 'c' ? ' on' : ''}" id="cmode">${S.cmode === 'c' ? 'candles' : 'line'}</button></div><canvas id="cv"></canvas><div class="em" id="cvE">loading chart…</div></div>
@@ -172,6 +185,30 @@ async function profile(w) { $('#prof').innerHTML = '<div class="empty">loading�
   catch (e) { $('#prof').innerHTML = `<div class="empty">${esc(e.message)}</div>`; } }
 document.addEventListener('click', e => { const t = e.target.closest('[data-w]'); if (t) { e.preventDefault(); e.stopPropagation(); profile(t.dataset.w); } });
 
+// ---------------------------------------------------------------- the city: every GTA coin as a block
+function squarify(items, x, y, w, h) { const out = []; let i = 0;
+  while (i < items.length) { const sh = Math.min(w, h); const worst = r => { const s = r.reduce((a, b) => a + b.v, 0), mx = Math.max(...r.map(q => q.v)), mn = Math.min(...r.map(q => q.v)); return Math.max(sh * sh * mx / (s * s), s * s / (sh * sh * mn)); };
+    let row = [items[i]], j = i + 1; while (j < items.length && worst([...row, items[j]]) <= worst(row)) { row.push(items[j]); j++; } const s = row.reduce((a, b) => a + b.v, 0);
+    if (w >= h) { const cw = s / h; let cy = y; for (const r of row) { const rh = r.v / cw; out.push({ ...r, x, y: cy, w: cw, h: rh }); cy += rh; } x += cw; w -= cw; }
+    else { const ch = s / w; let cx = x; for (const r of row) { const rw = r.v / ch; out.push({ ...r, x: cx, y, w: rw, h: ch }); cx += rw; } y += ch; h -= ch; } i = j; } return out; }
+function cityCol(ch) { const v = Math.max(-1, Math.min(1, (ch || 0) / 40)); return v >= 0 ? `rgb(${Math.round(30 + 10 * (1 - v))},${Math.round(110 + 110 * v)},${Math.round(95 + 60 * v)})` : `rgb(${Math.round(150 - 100 * v)},${Math.round(50 + 20 * (1 + v))},${Math.round(70 + 20 * (1 + v))})`; }
+function renderCity() { const el = $('#city'); if (!el || S.tab !== 'city') return; const W = el.clientWidth, Hh = el.clientHeight; if (W < 50 || Hh < 50) return;
+  const C = S.coins.filter(c => c.mcap > 0).map(c => ({ c, raw: Math.pow(c.mcap, .55) })).sort((a, b) => b.raw - a.raw); const tot = C.reduce((a, b) => a + b.raw, 0);
+  const L = squarify(C.map(x => ({ ...x, v: x.raw / tot * W * Hh })), 0, 0, W, Hh);
+  el.innerHTML = L.map((b, i) => { const c = b.c, n = callsOn(c.mint), small = b.w < 120 || b.h < 70; return `<div class="blk${small ? ' sm' : ''}${n ? ' hot' : ''}" data-m="${c.mint}" style="left:${b.x}px;top:${b.y}px;width:${b.w}px;height:${b.h}px;background:linear-gradient(160deg,${cityCol(c.ch24h)},rgba(20,4,18,.55));animation-delay:${i * 35}ms">
+    ${n ? `<span class="calls">${n} call${n === 1 ? '' : 's'}</span>` : ''}<div class="bt">${ico(c)}$${esc(c.symbol)}</div><div><div class="big2">${pct(c.ch24h)}</div><div class="bb"><span>${money(c.mcap)}</span>${wanted(c)}</div></div></div>`; }).join('');
+  $$('#city .blk').forEach(b => b.onclick = () => { tab('markets'); select(b.dataset.m, 1); }); }
+
+// ---------------------------------------------------------------- the live ticker under the tabs
+async function loadTicker() { if (!H.classList.contains('term')) return; try { const j = await api('/api/wire'); const T = (j.trades || []).slice(0, 30); if (!T.length) return;
+  const calls = (S.board?.recent || []).slice(0, 8).map(c => `<span class="ti" data-m="${c.mint}"><b class="${c.side === 'Y' ? 'up' : 'dn'}">CALL ${c.side === 'Y' ? 'YES' : 'NO'}</b> $${esc(S.byMint[c.mint]?.symbol || short(c.mint))} · ${mq(c.mkt)}</span>`);
+  const one = T.map(t => { const c = S.byMint[t.mint] || { symbol: t.sym, icon: t.icon }; return `<span class="ti" data-m="${t.mint}">${ico(c)}<b class="${t.buy ? 'up' : 'dn'}">${t.buy ? 'BUY' : 'SELL'}</b> $${esc(t.sym)} ${money(t.usd)} <span class="when">${ago(t.ts)}</span></span>`; });
+  const mix = []; one.forEach((x, i) => { mix.push(x); if (i % 4 === 3 && calls.length) mix.push(calls.shift()); }); const html = mix.join('');
+  $('#tickR').innerHTML = html + html; $$('#tickR .ti').forEach(t => t.onclick = () => { tab('markets'); select(t.dataset.m, 1); }); } catch (_) {} }
+setInterval(loadTicker, 20000);
+setInterval(() => { const c = $('#clk'); if (c) c.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }); }, 1000);
+function missionPassed(c, k, side) { const m = $('#mp'); $('#mpT').textContent = `$${c.symbol} · ${mq(k)} · ${side === 'Y' ? 'YES' : 'NO'}`; m.classList.remove('on'); void m.offsetWidth; m.classList.add('on'); clearTimeout(missionPassed.h); missionPassed.h = setTimeout(() => m.classList.remove('on'), 2700); }
+
 // ---------------------------------------------------------------- movers: six ways to read the GTA trenches
 function renderMovers() { const C = S.coins; if (!C.length) return; const L = (t, sub, list, f) => `<div class="mv"><h4>${t}<span>${sub}</span></h4>${list.slice(0, 8).map((c, i) => `<div class="r" data-m="${c.mint}"><i>${i + 1}</i>${ico(c)}<span>$${esc(c.symbol)}</span><b class="${f(c)[1]}">${f(c)[0]}</b></div>`).join('')}</div>`;
   const by = (k, d = -1) => C.filter(c => c[k] != null).slice().sort((a, b) => d * (a[k] - b[k]));
@@ -218,10 +255,10 @@ function renderFeed() { const R = S.board?.recent || []; $('#nRecent').textConte
   $('#feed').innerHTML = R.length ? R.map(c => { const k = S.byMint[c.mint]; return `<div class="fi"><span class="pill ${c.side}">${c.side === 'Y' ? 'YES' : 'NO'}</span><span><b>$${esc(k?.symbol || short(c.mint))}</b> · ${mq(c.mkt)}<br><span class="when"><span class="wl" data-w="${c.wallet}">${short(c.wallet)}</span> at ${money(c.mcap0)}</span></span><span class="when">${c.status === 'open' ? ago(c.ts) : `<span class="pill ${c.status}">${c.status}</span>`}</span></div>`; }).join('') : '<div class="empty">no calls yet. the first one lands here.</div>'; }
 function renderBoard() { const B = S.board?.board || []; if (!B.length) { $('#board').innerHTML = '<div class="empty">no graded calls yet. the first winners show up 24 hours after the first calls.</div>'; return; }
   const T = S.board?.totals || {}, best = B.filter(w => w.won + w.lost >= 3).sort((a, b) => b.acc - a.acc)[0];
-  $('#board').innerHTML = `<div class="bsum"><div><span>calls made</span><b>${T.calls || 0}</b></div><div><span>graded</span><b>${T.graded || 0}</b></div><div><span>callers</span><b>${T.callers || 0}</b></div><div><span>sharpest (3+ graded)</span><b>${best ? short(best.wallet) + ' · ' + Math.round(best.acc * 100) + '%' : '—'}</b></div></div><table><thead><tr><th>#</th><th>caller</th><th>won</th><th>lost</th><th>open</th><th>accuracy</th><th>best streak</th></tr></thead><tbody>${B.map((w, i) => `<tr class="${w.wallet === S.wallet ? 'me' : ''}"><td class="rk">${i + 1}</td><td><span class="wl" data-w="${w.wallet}">${short(w.wallet)}</span></td><td class="up">${w.won}</td><td class="dn">${w.lost}</td><td>${w.open}</td><td>${w.acc == null ? '—' : Math.round(w.acc * 100) + '%'}</td><td>${w.best}</td></tr>`).join('')}</tbody></table>`; }
+  $('#board').innerHTML = `<div class="bsum"><div><span>calls made</span><b>${T.calls || 0}</b></div><div><span>graded</span><b>${T.graded || 0}</b></div><div><span>callers</span><b>${T.callers || 0}</b></div><div><span>sharpest (3+ graded)</span><b>${best ? short(best.wallet) + ' · ' + Math.round(best.acc * 100) + '%' : '—'}</b></div></div><table><thead><tr><th>#</th><th>caller</th><th>won</th><th>lost</th><th>open</th><th>accuracy</th><th>best streak</th></tr></thead><tbody>${B.map((w, i) => `<tr class="${w.wallet === S.wallet ? 'me' : ''}"><td class="rk">${i + 1}</td><td><span class="wl" data-w="${w.wallet}">${short(w.wallet)}</span>${tier(w.won)}</td><td class="up">${w.won}</td><td class="dn">${w.lost}</td><td>${w.open}</td><td>${w.acc == null ? '—' : Math.round(w.acc * 100) + '%'}</td><td>${w.best}</td></tr>`).join('')}</tbody></table>`; }
 function renderMine() { const M = S.board?.mine || []; $('#nMine').textContent = M.length;
   if (!S.wallet) { $('#mine').innerHTML = '<div class="empty">connect a wallet to see your calls.</div>'; $('#mineSum').textContent = ''; return; }
-  const w = M.filter(c => c.status === 'won').length, l = M.filter(c => c.status === 'lost').length; $('#mineSum').textContent = `${M.length} calls · ${w} won · ${l} lost`;
+  const w = M.filter(c => c.status === 'won').length, l = M.filter(c => c.status === 'lost').length; $('#mineSum').innerHTML = `${M.length} calls · ${w} won · ${l} lost ${tier(w)}`;
   $('#mine').innerHTML = M.length ? M.map(c => { const k = S.byMint[c.mint]; return `<div class="fi"><span class="pill ${c.side}">${c.side === 'Y' ? 'YES' : 'NO'}</span><span><b>$${esc(k?.symbol || short(c.mint))}</b> · ${mq(c.mkt)}<br><span class="when">called at ${money(c.mcap0)}${c.mcap1 ? ' · graded at ' + money(c.mcap1) : ''}</span></span><span class="when">${c.status === 'open' ? 'graded in ' + left(c.due) : `<span class="pill ${c.status}">${c.status}</span>`}</span></div>`; }).join('') : '<div class="empty">no calls yet. pick a GTA coin and hit YES or NO.</div>'; }
 
 // ---------------------------------------------------------------- polymarket
@@ -234,7 +271,7 @@ async function loadPM() { try { S.pm = await api('/api/pm'); const E = S.pm.even
 
 // ---------------------------------------------------------------- tabs + keys
 const TABS = $$('.tab').map(t => t.dataset.t);
-function tab(t) { $$('.tab').forEach(b => b.classList.toggle('on', b.dataset.t === t)); $$('.pane').forEach(p => p.classList.toggle('on', p.dataset.p === t)); S.tab = t; if (t === 'markets') renderDet(); if (t === 'map') requestAnimationFrame(renderMap); if (t === 'hub') renderHub(); if (t === 'movers') renderMovers(); if (t === 'all') renderAll(); if (t === 'hub' && !S.news) loadNews(); if (t === 'markets') loadWire(); }
+function tab(t) { $$('.tab').forEach(b => b.classList.toggle('on', b.dataset.t === t)); $$('.pane').forEach(p => p.classList.toggle('on', p.dataset.p === t)); S.tab = t; if (t === 'markets') renderDet(); if (t === 'map') requestAnimationFrame(renderMap); if (t === 'hub') renderHub(); if (t === 'movers') renderMovers(); if (t === 'city') requestAnimationFrame(renderCity); if (t === 'all') renderAll(); if (t === 'hub' && !S.news) loadNews(); if (t === 'markets') loadWire(); }
 $$('.tab').forEach(b => b.onclick = () => tab(b.dataset.t)); S.tab = 'markets';
 addEventListener('keydown', e => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); if (!H.classList.contains('term')) openTerm(); pal(); return; } if (e.target.matches('input')) { if (e.key === 'Escape') e.target.blur(); return; } if ($('.modal.on')) { if (e.key === 'Escape') closeModals(); if (e.key === 'Enter' && $('#mCall.on')) $('#sign').click(); return; }
   const k = e.key.toLowerCase();
@@ -254,7 +291,7 @@ const findCoin = q => { q = (q || '').replace(/^\$/, '').toLowerCase(); return S
 const HELP = 'open <coin> · call <coin> <up|50|2x|10x|rug> <yes|no> · whois <wallet> · price <coin> · watch <coin> · sort <mcap|24h|volume|new|called|watch> · markets · movers · map · hub · poly · board · mine · how · connect · home';
 const hist = []; let hi = 0;
 function run(line) { const a = line.trim().split(/\s+/), c0 = (a[0] || '').toLowerCase(), out = m => $('#cmdO').textContent = m; if (!c0) return; hist.unshift(line); hi = -1;
-  const tabsMap = { markets: 'markets', movers: 'movers', map: 'map', hub: 'hub', gta: 'hub', poly: 'poly', polymarket: 'poly', board: 'board', leaderboard: 'board', mine: 'mine', calls: 'mine', how: 'how', help2: 'how' };
+  const tabsMap = { markets: 'markets', city: 'city', movers: 'movers', map: 'map', hub: 'hub', gta: 'hub', poly: 'poly', polymarket: 'poly', board: 'board', leaderboard: 'board', mine: 'mine', calls: 'mine', how: 'how', help2: 'how' };
   if (c0 === 'help' || c0 === '?') return out(HELP);
   if (tabsMap[c0]) { tab(tabsMap[c0]); return out('→ ' + tabsMap[c0]); }
   if (c0 === 'home' || c0 === 'exit') { openHome(); return; }
@@ -310,7 +347,7 @@ function slip(c, k, side) { pending = { c, k, side }; const due = new Date(Date.
 $('#sign').onclick = async () => { if (!pending) return; if (!S.wallet && !(await connect())) return; const { c, k, side } = pending; const b = { wallet: S.wallet, mint: c.mint, mkt: k, side, ts: Date.now() };
   const btn = $('#sign'); btn.disabled = true; btn.textContent = 'check your wallet…';
   try { if (!S.prov?.signMessage) throw new Error('this wallet cannot sign messages'); const r = await S.prov.signMessage(new TextEncoder().encode(msgOf(b)), 'utf8'); const sig = r?.signature || r; b.sig = b58(new Uint8Array(sig));
-    await api('/api/call', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(b) }); closeModals(); toast(`called ${side === 'Y' ? 'YES' : 'NO'} on $${c.symbol}`); await loadBoard(); renderDet(); share(c, k, side); }
+    await api('/api/call', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(b) }); closeModals(); missionPassed(c, k, side); await loadBoard(); renderDet(); setTimeout(() => share(c, k, side), 2500); }
   catch (e) { toast(e.message || 'cancelled', 1); } finally { btn.disabled = false; btn.textContent = 'sign the call'; } };
 
 function share(c, k, side) { const cv = $('#card'), g = cv.getContext('2d'), W = 1200, Hh = 675; const gr = g.createLinearGradient(0, 0, W, Hh); gr.addColorStop(0, '#4a1238'); gr.addColorStop(1, '#1a0717'); g.fillStyle = gr; g.fillRect(0, 0, W, Hh);
@@ -324,4 +361,4 @@ function share(c, k, side) { const cv = $('#card'), g = cv.getContext('2d'), W =
 loadCoins(); loadBoard(); loadPM(); loadNews(); setInterval(loadNews, 600000);
 setInterval(loadCoins, 30000); setInterval(loadBoard, 15000); setInterval(loadPM, 120000);
 setInterval(() => { if (S.tab === 'mine') renderMine(); }, 30000);
-addEventListener('resize', () => { if (S.tab === 'markets' && S.sel) drawChart(S.sel); if (S.tab === 'map') renderMap(); });
+addEventListener('resize', () => { if (S.tab === 'markets' && S.sel) drawChart(S.sel); if (S.tab === 'map') renderMap(); if (S.tab === 'city') renderCity(); });
