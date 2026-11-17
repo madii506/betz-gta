@@ -39,7 +39,7 @@ setTimeout(() => { sceneOk = true; coinsOk = true; progress(); }, 9000);
 progress();
 
 // ---------------------------------------------------------------- home <-> terminal
-function openTerm() { if (!H.classList.contains('term')) { const w = $('#wipe'); w.classList.remove('go'); void w.offsetWidth; w.classList.add('go'); } H.classList.add('term'); window.betzScene?.mode('term'); if (location.hash !== '#terminal') history.replaceState(null, '', '#terminal'); }
+function openTerm() { H.classList.add('term'); window.betzScene?.mode('term'); if (location.hash !== '#terminal') history.replaceState(null, '', '#terminal'); }
 function openHome() { H.classList.remove('term'); window.betzScene?.mode('home'); history.replaceState(null, '', location.pathname); }
 $('#enter').onclick = () => { openTerm(); loadTicker(); }; $('#toHome').onclick = openHome;
 $('#hconn').onclick = () => connect(); $('#wal').onclick = () => S.wallet ? disconnect() : connect();

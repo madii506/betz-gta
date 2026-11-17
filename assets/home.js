@@ -264,7 +264,7 @@ const SHOTS = P ? [
   { p: [3.3, .85, 7.4], t: [-.15, 2.0, 0], f: 36 }, { p: [16, 10, 21], t: [-5, 1.6, 1], f: 40, m: [-3, 2, -5] }, { orbit: 1, r: 9.5, h: 3.2, a0: .55, a1: 2.5, t: [0, 1.9, 0], f: 38 },
   { p: [6.8, .7, .6], t: [-1.2, 2.0, .4], f: 36 }, { p: [-2.2, 7, -15], t: [0, 2.2, 28], f: 42, m: [0, 1.5, 3] }, { p: [9, 30, -8], t: [-4, 0, 16], f: 46, m: [0, 4, 5] }, { p: [1.1, .45, 9.6], t: [-.4, 2.15, -2], f: 34 }];
 const sm = x => x * x * x * (x * (x * 6 - 15) + 10); const V = a => new THREE.Vector3(...a);
-const SHOT = 7.5, BLEND = 2.6; let mode = 'home', dimV = 0, hopT = 4, mx = 0, my = 0;
+const SHOT = 7.5, BLEND = 2.6; let mode = 'home', tsV = 1, dimV = 0, hopT = 4, mx = 0, my = 0;
 addEventListener('pointermove', e => { mx = e.clientX / innerWidth - .5; my = e.clientY / innerHeight - .5; });
 function shotAt(s, f) { if (s.orbit) { const a = s.a0 + (s.a1 - s.a0) * f; return { p: new THREE.Vector3(Math.sin(a) * s.r, s.h + Math.sin(f * Math.PI) * .8, Math.cos(a) * s.r), t: V(s.t), f: s.f }; }
   const m = s.m || [-.2, .06, .15]; return { p: V(s.p).add(new THREE.Vector3(m[0] * f, m[1] * f, m[2] * f)), t: V(s.t), f: s.f }; }
@@ -288,8 +288,8 @@ function drawRadar(speed, dt) { if (!rg) return; const S = radar.width, c = S / 
 // ================================================================ loop
 const clock = new THREE.Clock(); let T = (+(new URLSearchParams(location.search).get('shot')) || 0) * 7.5 + .5, ready = false, frames = 0, slow = 0;
 const SPEED = 13;
-function frame() { requestAnimationFrame(frame); const dt = Math.min(clock.getDelta(), .05); if (document.hidden) return; const ts = mode === 'term' ? .45 : 1; T += dt * ts; const sp = SPEED * ts, d = sp * dt;
-  dimV += ((mode === 'term' ? 1 : 0) - dimV) * Math.min(1, dt * 3); post.uniforms.dim.value = dimV * .55; post.uniforms.time.value = T % 10;
+function frame() { requestAnimationFrame(frame); const dt = Math.min(clock.getDelta(), .05); if (document.hidden) return; tsV += ((mode === 'term' ? .45 : 1) - tsV) * Math.min(1, dt * 1.2); const ts = tsV; T += dt * ts; const sp = SPEED * ts, d = sp * dt;
+  dimV += ((mode === 'term' ? 1 : 0) - dimV) * Math.min(1, dt * 1.4); post.uniforms.dim.value = dimV * .55; post.uniforms.time.value = T % 10;
   camAt(T + 1);
   // the world rolls past
   for (const g of segs) { g.position.z -= d; if (g.position.z < ZMIN) g.position.z += NSEG * SEG; }
@@ -309,7 +309,6 @@ function frame() { requestAnimationFrame(frame); const dt = Math.min(clock.getDe
   for (const f of fly) { f.life += dt; if (f.life < 0) { f.m.visible = false; continue; } if (!f.max || f.life > f.max || f.p.y < -.2) spawn(f);
     f.v.y -= .5 * dt; f.v.multiplyScalar(1 - .5 * dt); f.v.x += Math.sin(T * 2 + f.r.x) * .6 * dt; f.p.addScaledVector(f.v, dt); f.p.z -= d * .9; f.r.addScaledVector(f.w, dt);
     f.m.visible = true; f.m.position.copy(f.p); f.m.rotation.set(f.r.x, f.r.y, f.r.z); }
-  if (mode === 'home') drawRadar(sp, dt);
   // render: colour (all layers), normals+depth (layer 0), then ink
   cam.layers.enableAll(); scene.overrideMaterial = null; R.setRenderTarget(rtC); R.render(scene, cam);
   cam.layers.set(0); scene.overrideMaterial = normalMat; const sh = R.shadowMap.autoUpdate; R.shadowMap.autoUpdate = false; R.setRenderTarget(rtN); R.render(scene, cam); R.shadowMap.autoUpdate = sh; scene.overrideMaterial = null;
@@ -317,4 +316,4 @@ function frame() { requestAnimationFrame(frame); const dt = Math.min(clock.getDe
   frames++; if (!ready && frames > 2) { ready = true; window.dispatchEvent(new Event('betz:scene')); }
   if (dt > .045) slow++; else slow = Math.max(0, slow - 1); if (slow > 40 && DPR > .8) { DPR = Math.max(.75, DPR - .25); R.setPixelRatio(DPR); size(); slow = 0; } }
 frame();
-const DPR0 = DPR; window.betzScene = { mode(m) { if (m === mode) return; mode = m; DPR = m === 'term' ? Math.min(.6, DPR0) : DPR0; R.setPixelRatio(DPR); size(); }, get ready() { return ready; } };
+const DPR0 = DPR; let dprT = 0; window.betzScene = { mode(m) { if (m === mode) return; mode = m; clearTimeout(dprT); const set = () => { DPR = mode === 'term' ? Math.min(.6, DPR0) : DPR0; R.setPixelRatio(DPR); size(); }; if (m === 'term') dprT = setTimeout(set, 1500); else set(); }, get ready() { return ready; } };
