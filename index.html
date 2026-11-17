@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>betz · prediction markets for every GTA coin</title>
+<meta name="description" content="Call every GTA coin on pump.fun: higher in 24h, 2x, or halves. Free, signed with your wallet, graded from on-chain data. Plus live GTA VI markets from Polymarket.">
+<meta property="og:title" content="betz">
+<meta property="og:description" content="prediction markets for every GTA coin">
+<meta property="og:image" content="https://betz-gta.vercel.app/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
+<link rel="modulepreload" href="/assets/three.module.min.js">
+<style>
+@font-face{font-family:Rubik;src:url(/assets/rubik-latin-400-normal.woff2) format('woff2');font-weight:400;font-display:swap}
+@font-face{font-family:Rubik;src:url(/assets/rubik-latin-500-normal.woff2) format('woff2');font-weight:500;font-display:swap}
+@font-face{font-family:Rubik;src:url(/assets/rubik-latin-700-normal.woff2) format('woff2');font-weight:700;font-display:swap}
+@font-face{font-family:Rubik;src:url(/assets/rubik-latin-900-normal.woff2) format('woff2');font-weight:900;font-display:swap}
+@font-face{font-family:RB;src:url(/assets/rubik-latin-900-normal.woff2) format('woff2');font-weight:900}
+@font-face{font-family:JB;src:url(/assets/jbmono.woff2) format('woff2');font-weight:100 900}
+:root{--ink:#14060f;--paper:#fff6f2;--dim:rgba(255,246,242,.62);--faint:rgba(255,246,242,.38);--line:rgba(255,246,242,.13);--panel:rgba(22,7,24,.62);--panel2:rgba(34,10,34,.72);--pink:#ff4fa6;--teal:#19d3c5;--yes:#2fe0a8;--no:#ff5a6a;--gold:#ffc65a;--sel:#fff6f2}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#1a0717;color:var(--paper);font-family:Rubik,system-ui,sans-serif;overflow:hidden;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+a{color:inherit;text-decoration:none}
+.mono{font-family:JB,ui-monospace,monospace}
+#bg{position:fixed;inset:0;width:100vw;height:100vh;display:block;z-index:0;transition:filter 1.2s ease}
+html.term #bg{filter:blur(16px) saturate(1.15) brightness(.82)}
+.grain{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(120% 90% at 85% 5%,rgba(255,150,110,.18),transparent 55%),radial-gradient(90% 80% at 0% 100%,rgba(60,10,60,.45),transparent 60%)}
+html.term .grain{background:radial-gradient(120% 90% at 85% 0%,rgba(255,120,150,.14),transparent 55%),linear-gradient(rgba(30,6,28,.5),rgba(20,4,20,.72))}
+
+/* ---------------------------------------------------------------- loading screen */
+#load{position:fixed;inset:0;z-index:50;background:#0d030b;display:grid;place-items:center;transition:opacity .9s ease,visibility .9s}
+#load.out{opacity:0;visibility:hidden}
+#load .lm{width:min(34vw,190px);height:auto}
+#load .lm .body{transform-origin:50% 50%;animation:lbody 1.2s cubic-bezier(.2,.8,.2,1) both}
+#load .lm .wedge{animation:lwedge 1.4s .5s cubic-bezier(.2,1.4,.3,1) both}
+@keyframes lbody{from{opacity:0;transform:scale(.6) rotate(-90deg)}to{opacity:1;transform:none}}
+@keyframes lwedge{from{opacity:0;transform:translate(-14px,14px)}to{opacity:1;transform:none}}
+#load .lb{position:absolute;right:max(28px,4vw);bottom:max(26px,5vh);display:flex;align-items:center;gap:14px;font-weight:700;font-size:13px;letter-spacing:.14em;text-transform:uppercase}
+#load .spin{width:18px;height:18px;border:3px solid rgba(255,246,242,.2);border-top-color:var(--paper);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#load .tip{position:absolute;left:max(28px,4vw);bottom:max(26px,5vh);max-width:min(560px,60vw);font-size:14px;color:var(--dim);line-height:1.5}
+#load .tip b{color:var(--paper);font-weight:700;margin-right:8px;letter-spacing:.12em;font-size:12px}
+#lbar{position:absolute;left:0;bottom:0;height:3px;background:var(--paper);width:0;transition:width .4s ease}
+
+/* ---------------------------------------------------------------- home */
+#home{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;justify-content:center;padding:0 max(28px,7vw);pointer-events:none;transition:opacity .7s ease,transform .9s cubic-bezier(.2,.8,.2,1)}
+html.term #home{opacity:0;transform:translateX(-40px)}
+#home>*{pointer-events:auto}
+.hero{max-width:640px}
+.hero .hmk{width:clamp(64px,8vw,104px);height:auto;filter:drop-shadow(0 10px 24px rgba(20,4,18,.45));opacity:0;transform:translateY(16px);transition:all .9s cubic-bezier(.2,.8,.2,1)}
+.hero h1{font-family:RB,Rubik;font-weight:900;font-size:clamp(84px,13vw,188px);line-height:.86;letter-spacing:-.02em;margin:14px 0 10px -.04em;text-shadow:0 14px 40px rgba(30,4,26,.45);opacity:0;transform:translateY(24px);transition:all 1s .12s cubic-bezier(.2,.8,.2,1)}
+.hero h1 span{display:inline-block;animation:bob 4.8s ease-in-out infinite}
+.hero h1 span:nth-child(2){animation-delay:.15s}.hero h1 span:nth-child(3){animation-delay:.3s}.hero h1 span:nth-child(4){animation-delay:.45s}
+@keyframes bob{0%,100%{transform:none}8%{transform:translateY(-10px) rotate(-2deg)}16%{transform:none}}
+.hero p{font-size:clamp(17px,1.8vw,24px);font-weight:500;color:var(--paper);opacity:0;transform:translateY(20px);transition:all 1s .24s cubic-bezier(.2,.8,.2,1);text-shadow:0 4px 18px rgba(30,4,26,.55)}
+.hero p b{font-weight:700}
+.cta{display:flex;gap:12px;margin-top:30px;flex-wrap:wrap;opacity:0;transform:translateY(20px);transition:all 1s .36s cubic-bezier(.2,.8,.2,1)}
+html.go .hero .hmk,html.go .hero h1,html.go .hero p,html.go .cta{opacity:1;transform:none}
+.btn{height:52px;padding:0 24px;display:inline-flex;align-items:center;gap:12px;font-weight:700;font-size:14px;letter-spacing:.14em;text-transform:uppercase;border-radius:3px;transition:transform .2s,background .2s,box-shadow .2s}
+.btn.w{background:var(--paper);color:var(--ink);box-shadow:0 10px 30px rgba(20,4,18,.35)}
+.btn.w:hover{transform:translateY(-2px);box-shadow:0 14px 36px rgba(20,4,18,.45)}
+.btn.o{background:rgba(22,7,24,.38);border:1.5px solid rgba(255,246,242,.7);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.btn.o:hover{background:rgba(255,246,242,.14);transform:translateY(-2px)}
+.btn .k{font-family:JB;font-size:11px;letter-spacing:0;border:1.5px solid currentColor;border-radius:3px;padding:2px 5px;opacity:.7}
+.btn .dot{width:8px;height:8px;border-radius:50%;background:var(--faint)}
+.btn.on .dot{background:var(--yes);box-shadow:0 0 10px var(--yes)}
+.cd{position:fixed;top:max(18px,3vh);right:max(20px,4vw);z-index:6;display:flex;align-items:center;gap:10px;font-weight:700;font-size:12px;letter-spacing:.14em;text-transform:uppercase;background:rgba(22,7,24,.45);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--line);padding:9px 14px;border-radius:3px;transition:opacity .6s}
+.cd i{width:7px;height:7px;border-radius:50%;background:var(--pink);box-shadow:0 0 10px var(--pink);animation:pulse 1.6s infinite}
+@keyframes pulse{50%{opacity:.35}}
+.cd .mono{font-weight:700;letter-spacing:.04em}
+html.term .cd{opacity:0;pointer-events:none}
+.tape{position:fixed;left:0;right:0;bottom:0;z-index:6;height:40px;overflow:hidden;background:rgba(14,4,14,.5);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid var(--line);transition:opacity .6s,transform .6s}
+html.term .tape{opacity:0;transform:translateY(40px)}
+.tape .run{display:flex;gap:34px;white-space:nowrap;align-items:center;height:40px;padding-left:24px;animation:tape 70s linear infinite;width:max-content}
+.tape:hover .run{animation-play-state:paused}
+@keyframes tape{to{transform:translateX(-50%)}}
+.tape .it{display:flex;gap:9px;align-items:center;font-size:13px;font-weight:500}
+.tape .it img{width:20px;height:20px;border-radius:50%;object-fit:cover;background:#3a1430}
+.tape .it b{font-weight:700}
+.up{color:var(--yes)}.dn{color:var(--no)}
+
+/* ---------------------------------------------------------------- terminal: a pause menu */
+#term{position:fixed;inset:0;z-index:8;display:flex;flex-direction:column;opacity:0;visibility:hidden;transition:opacity .6s ease,visibility .6s}
+html.term #term{opacity:1;visibility:visible}
+.th{display:flex;align-items:center;gap:22px;padding:18px max(18px,3vw) 0}
+.brand{display:flex;align-items:center;gap:12px;font-family:RB;font-weight:900;font-size:30px;letter-spacing:-.01em;cursor:pointer}
+.brand svg{width:34px;height:34px}
+.tabs{display:flex;align-items:stretch;gap:4px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs .qk{display:flex;align-items:center;padding:0 8px;font-family:JB;font-size:11px;color:var(--dim)}
+.tabs .qk span{border:1.5px solid var(--faint);border-radius:3px;padding:2px 6px}
+.tab{height:42px;padding:0 18px;display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;letter-spacing:.14em;text-transform:uppercase;background:rgba(18,5,20,.55);border-top:3px solid transparent;white-space:nowrap;transition:background .2s,color .2s}
+.tab:hover{background:rgba(255,246,242,.12)}
+.tab.on{background:var(--sel);color:var(--ink);border-top-color:var(--pink)}
+.tab .n{font-family:JB;font-size:10px;padding:1px 6px;border-radius:9px;background:rgba(255,246,242,.16)}
+.tab.on .n{background:rgba(20,6,15,.12)}
+.wal{height:42px;padding:0 16px;display:flex;align-items:center;gap:10px;font-weight:700;font-size:13px;letter-spacing:.1em;text-transform:uppercase;background:rgba(18,5,20,.55);border:1px solid var(--line);border-radius:3px;white-space:nowrap}
+.wal:hover{background:rgba(255,246,242,.12)}
+.wal .dot{width:8px;height:8px;border-radius:50%;background:var(--faint)}
+.wal.on .dot{background:var(--yes);box-shadow:0 0 10px var(--yes)}
+.strip{display:flex;gap:2px;margin:10px max(18px,3vw) 0;overflow-x:auto;scrollbar-width:none}
+.strip::-webkit-scrollbar{display:none}
+.st{flex:1;min-width:150px;padding:10px 14px;background:rgba(18,5,20,.45);display:flex;flex-direction:column;gap:3px}
+.st span{font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+.st b{font-family:JB;font-size:17px;font-weight:700}
+.tb{flex:1;min-height:0;display:flex;margin:10px max(18px,3vw) 0;gap:10px}
+.pane{display:none;flex:1;min-height:0;gap:10px}
+.pane.on{display:flex;animation:pin .45s cubic-bezier(.2,.8,.2,1)}
+@keyframes pin{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.box{background:var(--panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:3px;min-height:0;display:flex;flex-direction:column}
+.bh{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line);font-weight:700;font-size:12px;letter-spacing:.16em;text-transform:uppercase}
+.bh .sp{flex:1}
+.bh small{font-family:JB;letter-spacing:0;font-weight:500;color:var(--faint);text-transform:none;font-size:11px}
+.scroll{overflow-y:auto;min-height:0;flex:1;scrollbar-width:thin;scrollbar-color:rgba(255,246,242,.25) transparent}
+.foot{display:flex;gap:22px;align-items:center;justify-content:flex-end;padding:10px max(18px,3vw) max(12px,env(safe-area-inset-bottom));font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.foot kbd{font-family:JB;font-size:10px;border:1.5px solid var(--faint);border-radius:3px;padding:2px 6px;margin-right:6px;color:var(--paper)}
+.foot .l{margin-right:auto;font-family:JB;letter-spacing:0;text-transform:none;font-weight:500;color:var(--faint)}
+
+/* markets pane */
+.list{width:min(400px,36vw)}
+.tools{display:flex;gap:6px;padding:10px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.tools input{flex:1 1 100%;height:38px;padding:0 12px;background:rgba(0,0,0,.28);border:1px solid var(--line);border-radius:3px;color:var(--paper);font:500 14px Rubik;outline:none}
+.tools input:focus{border-color:rgba(255,246,242,.5)}
+.chip{height:28px;padding:0 10px;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;border-radius:3px;background:rgba(255,246,242,.07);color:var(--dim)}
+.chip.on{background:var(--paper);color:var(--ink)}
+.row{display:grid;grid-template-columns:38px 1fr auto;gap:12px;align-items:center;padding:10px 14px;border-left:3px solid transparent;cursor:pointer;transition:background .15s}
+.row:hover{background:rgba(255,246,242,.07)}
+.row.on{background:rgba(255,246,242,.92);color:var(--ink);border-left-color:var(--pink)}
+.row img,.ph{width:38px;height:38px;border-radius:50%;object-fit:cover;background:#3a1430;display:grid;place-items:center;font-weight:900;font-size:14px}
+.row .nm{min-width:0}
+.row .nm b{display:block;font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .nm span{font-family:JB;font-size:11px;color:var(--faint)}
+.row.on .nm span{color:rgba(20,6,15,.55)}
+.row .rt{text-align:right;font-family:JB;font-size:12px;line-height:1.5}
+.row .rt b{font-size:13px}
+.minibar{display:flex;height:4px;border-radius:2px;overflow:hidden;background:rgba(255,246,242,.12);margin-top:5px;width:74px;margin-left:auto}
+.minibar i{background:var(--yes)}.minibar u{background:var(--no)}
+.det{flex:1;min-width:0;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,246,242,.25) transparent}.det>*{flex-shrink:0}
+.dh{display:flex;gap:16px;align-items:center;padding:18px 20px;border-bottom:1px solid var(--line)}
+.dh img,.dh .ph{width:62px;height:62px;font-size:22px}
+.dh h2{font-family:RB;font-weight:900;font-size:clamp(24px,2.6vw,36px);line-height:1}
+.dh .sub{display:flex;gap:10px;align-items:center;margin-top:6px;font-family:JB;font-size:12px;color:var(--dim);flex-wrap:wrap}
+.dh .sub button,.dh .sub a{border:1px solid var(--line);padding:3px 8px;border-radius:3px;font-family:JB;font-size:11px}
+.dh .sub button:hover,.dh .sub a:hover{background:rgba(255,246,242,.12)}
+.dh .px{margin-left:auto;text-align:right}
+.dh .px b{display:block;font-family:JB;font-size:clamp(20px,2vw,28px);font-weight:700}
+.dh .px span{font-family:JB;font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border-bottom:1px solid var(--line)}
+.grid div{background:rgba(18,5,20,.55);padding:11px 16px}
+.grid span{display:block;font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+.grid b{font-family:JB;font-size:15px}
+.chart{position:relative;height:clamp(140px,21vh,220px);border-bottom:1px solid var(--line)}
+.chart canvas{position:absolute;inset:0;width:100%;height:100%}
+.chart .tf{position:absolute;top:10px;right:12px;display:flex;gap:4px;z-index:2}
+.chart .em{position:absolute;inset:0;display:grid;place-items:center;color:var(--faint);font-size:13px}
+.mkts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px}
+.mk{background:rgba(255,246,242,.05);border:1px solid var(--line);border-radius:3px;padding:14px;display:flex;flex-direction:column;gap:10px;transition:border-color .2s,background .2s}
+.mk.f{border-color:rgba(255,246,242,.6);background:rgba(255,246,242,.09)}
+.mk .q{font-weight:700;font-size:17px;display:flex;gap:8px;align-items:baseline}
+.mk .q kbd{font-family:JB;font-size:10px;border:1.5px solid var(--faint);border-radius:3px;padding:1px 5px;color:var(--dim)}
+.mk .od{display:flex;justify-content:space-between;font-family:JB;font-size:12px}
+.bar{display:flex;height:8px;border-radius:4px;overflow:hidden;background:rgba(255,246,242,.1)}
+.bar i{background:var(--yes);transition:width .6s}.bar u{background:var(--no);transition:width .6s}
+.mk .n{font-size:11px;color:var(--faint);font-family:JB}
+.yn{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.yn button{height:40px;border-radius:3px;font-weight:900;font-size:14px;letter-spacing:.12em;transition:transform .15s,filter .15s}
+.yn .y{background:var(--yes);color:#04281e}.yn .no{background:var(--no);color:#33060c}
+.yn button:hover{transform:translateY(-2px);filter:brightness(1.08)}
+.yn button:disabled{opacity:.35;cursor:not-allowed;transform:none}
+.mine{font-family:JB;font-size:11px;padding:7px 9px;border-radius:3px;background:rgba(255,246,242,.08)}
+.feed .fi{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:9px 16px;border-bottom:1px solid rgba(255,246,242,.06);font-size:13px}
+.pill{font-family:JB;font-size:10px;font-weight:700;padding:3px 7px;border-radius:3px;letter-spacing:.06em}
+.pill.Y{background:rgba(47,224,168,.18);color:var(--yes)}.pill.N{background:rgba(255,90,106,.18);color:var(--no)}
+.pill.won{background:var(--yes);color:#04281e}.pill.lost{background:var(--no);color:#33060c}.pill.open{background:rgba(255,246,242,.14)}.pill.grading{background:rgba(255,198,90,.2);color:var(--gold)}
+.when{font-family:JB;font-size:11px;color:var(--faint)}
+.empty{padding:28px 20px;color:var(--faint);font-size:14px;line-height:1.6;text-align:center}
+.side{width:min(340px,28vw)}
+/* polymarket pane */
+.pm{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px;padding:12px;align-content:start}
+.ev{background:rgba(255,246,242,.05);border:1px solid var(--line);border-radius:3px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.ev .t{display:flex;gap:12px;align-items:center}
+.ev img{width:44px;height:44px;border-radius:4px;object-fit:cover;background:#3a1430}
+.ev h3{font-size:16px;font-weight:700;line-height:1.25}
+.ev .m{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;font-size:13px}
+.ev .m .bar{grid-column:1/-1;height:5px}
+.ev .m b{font-family:JB}
+.ev .meta{display:flex;justify-content:space-between;font-family:JB;font-size:11px;color:var(--faint)}
+.ev a.go{align-self:flex-start;font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase;border-bottom:1.5px solid var(--paper);padding-bottom:2px}
+/* leaderboard */
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{position:sticky;top:0;background:rgba(30,8,30,.95);text-align:left;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);padding:10px 16px;font-weight:700}
+td{padding:11px 16px;border-bottom:1px solid rgba(255,246,242,.06);font-family:JB}
+tr.me td{background:rgba(255,246,242,.92);color:var(--ink)}
+td.rk{font-family:RB;font-weight:900;font-size:18px;width:60px}
+/* how */
+.how{padding:22px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.step{background:rgba(255,246,242,.05);border:1px solid var(--line);border-radius:3px;padding:18px}
+.step b{font-family:RB;font-size:34px;font-weight:900;color:var(--pink)}
+.step h4{font-size:17px;margin:8px 0 6px}
+.step p{font-size:14px;color:var(--dim);line-height:1.55}
+.faq{padding:0 22px 22px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.faq div{background:rgba(255,246,242,.05);border:1px solid var(--line);border-radius:3px;padding:16px}
+.faq h5{font-size:15px;margin-bottom:6px}
+.faq p{font-size:14px;color:var(--dim);line-height:1.55}
+.fine{padding:0 22px 26px;font-size:12px;color:var(--faint);line-height:1.6}
+/* modal + toast */
+.modal{position:fixed;inset:0;z-index:40;background:rgba(10,2,10,.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;place-items:center;padding:20px}
+.modal.on{display:grid;animation:pin .3s}
+.mbox{width:min(420px,100%);background:rgba(26,8,28,.96);border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.mbox .bh{font-size:13px}
+.wopt{display:flex;align-items:center;gap:12px;width:100%;padding:14px 18px;border-bottom:1px solid var(--line);font-weight:700;font-size:15px;text-align:left}
+.wopt:hover{background:rgba(255,246,242,.08)}
+.wopt img{width:30px;height:30px;border-radius:7px}
+.wopt span{margin-left:auto;font-family:JB;font-size:11px;color:var(--faint);font-weight:500}
+.mnote{padding:14px 18px;font-size:13px;color:var(--dim);line-height:1.55}
+.slip{margin:16px 18px;padding:16px;background:#f3ead6;color:#1d1624;border-radius:3px;font-family:JB;font-size:13px;line-height:1.7;position:relative}
+.slip:after{content:'';position:absolute;left:0;right:0;bottom:-6px;height:6px;background:radial-gradient(circle at 6px 0,transparent 5px,#f3ead6 6px) 0 0/12px 6px repeat-x}
+.slip .big{font-family:RB;font-weight:900;font-size:38px;line-height:1.1}
+.mact{display:flex;gap:8px;padding:0 18px 18px}
+.mact .btn{flex:1;justify-content:center;height:46px}
+#toast{position:fixed;left:50%;bottom:64px;transform:translate(-50%,20px);z-index:60;background:var(--paper);color:var(--ink);font-weight:700;padding:12px 18px;border-radius:3px;opacity:0;transition:all .3s;pointer-events:none;max-width:90vw;text-align:center;font-size:14px}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+#toast.err{background:var(--no);color:#2a050a}
+/* phone */
+@media (max-width:860px){
+  .th{flex-wrap:wrap;gap:10px;padding-top:12px}.brand{font-size:24px}.brand svg{width:28px;height:28px}
+  .tabs{order:3;flex:1 1 100%}.tabs .qk{display:none}.tab{height:38px;padding:0 12px;font-size:11px}
+  .wal{margin-left:auto;height:36px;font-size:11px}
+  .st{min-width:120px}.st b{font-size:14px}
+  .tb{margin:8px 10px 0}.pane.on{flex-direction:column;overflow-y:auto}
+  .pane.on>.box{flex-shrink:0}.list,.side{width:100%}.list{height:48vh}.side{height:40vh}.det{flex:none;overflow:visible}
+  .grid{grid-template-columns:repeat(2,1fr)}.mkts{grid-template-columns:1fr}.how,.faq{grid-template-columns:1fr}
+  .foot{display:none}.dh{flex-wrap:wrap}.dh .px{margin-left:0;text-align:left}
+  .cta .btn{flex:1;justify-content:center}.cd{font-size:10px;padding:7px 10px}
+}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<div class="grain"></div>
+
+<div id="load">
+  <svg class="lm" viewBox="0 0 200 200" aria-label="betz"><path class="body" fill="#fff6f2" d=""/><path class="wedge" fill="#fff6f2" d=""/></svg>
+  <div class="tip"><b>TIP</b><span id="tipT">Every call is free. You sign a message, nothing is sent on-chain.</span></div>
+  <div class="lb"><span id="lbT">loading the street</span><i class="spin"></i></div>
+  <div id="lbar"></div>
+</div>
+
+<section id="home">
+  <div class="hero">
+    <svg class="hmk" viewBox="0 0 200 200"><path class="body" fill="#fff6f2" d=""/><path class="wedge" fill="#fff6f2" d=""/></svg>
+    <h1><span>b</span><span>e</span><span>t</span><span>z</span></h1>
+    <p>prediction markets for every <b>GTA coin</b></p>
+    <div class="cta">
+      <button class="btn w" id="enter">enter terminal <span class="k">↵</span></button>
+      <button class="btn o" id="hconn"><i class="dot"></i><span>connect wallet</span></button>
+    </div>
+  </div>
+</section>
+<div class="cd" id="cd"><i></i><span>GTA VI</span><span class="mono" id="cdT">—</span></div>
+<div class="tape" id="tape"><div class="run" id="tapeR"></div></div>
+
+<section id="term">
+  <div class="th">
+    <div class="brand" id="toHome" title="back to the street"><svg viewBox="0 0 200 200"><path class="body" fill="#fff6f2" d=""/><path class="wedge" fill="#fff6f2" d=""/></svg>betz</div>
+    <nav class="tabs" id="tabs">
+      <span class="qk"><span>Q</span></span>
+      <button class="tab on" data-t="markets">markets <span class="n" id="nCoins">—</span></button>
+      <button class="tab" data-t="poly">polymarket <span class="n" id="nPoly">—</span></button>
+      <button class="tab" data-t="board">leaderboard</button>
+      <button class="tab" data-t="mine">my calls <span class="n" id="nMine">0</span></button>
+      <button class="tab" data-t="how">how it works</button>
+      <span class="qk"><span>E</span></span>
+    </nav>
+    <button class="wal" id="wal"><i class="dot"></i><span id="walT">connect</span></button>
+  </div>
+  <div class="strip">
+    <div class="st"><span>GTA coins tracked</span><b id="sCoins">—</b></div>
+    <div class="st"><span>combined mcap</span><b id="sMcap">—</b></div>
+    <div class="st"><span>24h volume</span><b id="sVol">—</b></div>
+    <div class="st"><span>open calls</span><b id="sOpen">—</b></div>
+    <div class="st"><span>callers</span><b id="sCallers">—</b></div>
+    <div class="st"><span>GTA VI</span><b id="sCd">—</b></div>
+  </div>
+  <div class="tb">
+    <div class="pane on" data-p="markets">
+      <div class="box list">
+        <div class="bh">GTA coins <span class="sp"></span><small id="upd">live</small></div>
+        <div class="tools">
+          <input id="q" placeholder="search name, ticker or contract" autocomplete="off">
+          <button class="chip on" data-s="mcap">mcap</button><button class="chip" data-s="ch24h">24h</button><button class="chip" data-s="vol24h">volume</button><button class="chip" data-s="new">new</button><button class="chip" data-s="called">called</button>
+        </div>
+        <div class="scroll" id="rows"></div>
+      </div>
+      <div class="box det" id="det"><div class="empty">loading coins…</div></div>
+      <div class="box side">
+        <div class="bh">live calls <span class="sp"></span><small id="nRecent"></small></div>
+        <div class="scroll feed" id="feed"><div class="empty">no calls yet. the first one lands here.</div></div>
+      </div>
+    </div>
+    <div class="pane" data-p="poly">
+      <div class="box" style="flex:1">
+        <div class="bh">GTA markets on Polymarket <span class="sp"></span><small>real money, real odds · trade on polymarket.com</small></div>
+        <div class="scroll"><div class="pm" id="pm"><div class="empty">loading markets…</div></div></div>
+      </div>
+    </div>
+    <div class="pane" data-p="board">
+      <div class="box" style="flex:1">
+        <div class="bh">best callers <span class="sp"></span><small>ranked by calls won, then accuracy</small></div>
+        <div class="scroll" id="board"><div class="empty">loading…</div></div>
+      </div>
+    </div>
+    <div class="pane" data-p="mine">
+      <div class="box" style="flex:1">
+        <div class="bh">my calls <span class="sp"></span><small id="mineSum"></small></div>
+        <div class="scroll" id="mine"><div class="empty">connect a wallet to see your calls.</div></div>
+      </div>
+    </div>
+    <div class="pane" data-p="how">
+      <div class="box" style="flex:1"><div class="scroll">
+        <div class="how">
+          <div class="step"><b>01</b><h4>pick a GTA coin</h4><p>Every GTA coin on pump.fun and Solana with a real market, pulled live from Jupiter: market cap, volume, holders, chart.</p></div>
+          <div class="step"><b>02</b><h4>make the call</h4><p>Three markets on every coin: higher in 24h, 2x in 24h, or halves in 24h. Hit YES or NO.</p></div>
+          <div class="step"><b>03</b><h4>sign, free</h4><p>Your wallet signs a short message. No transaction, no SOL, no approvals. We store the call with the coin's market cap at that second.</p></div>
+          <div class="step"><b>04</b><h4>get graded</h4><p>24 hours later the call is graded against the coin's live market cap from Jupiter. Wins climb the leaderboard.</p></div>
+        </div>
+        <div class="faq">
+          <div><h5>What are the odds?</h5><p>The crowd. The split shows every open call on that market right now. No house, no made-up numbers: zero calls means an empty bar.</p></div>
+          <div><h5>When is a call graded?</h5><p>At the first check after its 24 hours are up. Every visit to the board runs the grader, so it lands within minutes on a busy day.</p></div>
+          <div><h5>How many calls can I make?</h5><p>One open call per market per coin, up to 40 open at once. When a call is graded you can call that market again.</p></div>
+          <div><h5>What does signing do?</h5><p>It proves the call came from your wallet. The message says the coin, the market, your side and the time. It can't move funds.</p></div>
+          <div><h5>And the Polymarket tab?</h5><p>Live GTA VI markets from Polymarket with their real odds and volume. Trading happens on polymarket.com, not here.</p></div>
+          <div><h5>Rewards?</h5><p>The leaderboard is the record. Rewards for top callers from $BETZ creator fees are announced on X when they go live, with every payout linked on-chain.</p></div>
+        </div>
+        <p class="fine">betz is an independent project. Not affiliated with Rockstar Games, Take-Two, pump.fun, Jupiter or Polymarket. Calls are free predictions, not bets, and carry no money. $BETZ is a memecoin; its price can go to zero. Nothing here is financial advice.</p>
+      </div></div>
+    </div>
+  </div>
+  <div class="foot"><span class="l" id="footL">data: Jupiter · GeckoTerminal · Polymarket</span><span><kbd>Q</kbd><kbd>E</kbd>tabs</span><span><kbd>↑</kbd><kbd>↓</kbd>coin</span><span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd>market</span><span><kbd>Y</kbd><kbd>N</kbd>call</span><span><kbd>ESC</kbd>street</span></div>
+</section>
+
+<div class="modal" id="mWal"><div class="mbox"><div class="bh">connect a wallet <span class="sp"></span><button data-x>✕</button></div><div id="wList"></div><p class="mnote">betz only asks your wallet to sign a message when you make a call. It never asks for a transaction.</p></div></div>
+<div class="modal" id="mCall"><div class="mbox"><div class="bh">your bet slip <span class="sp"></span><button data-x>✕</button></div><div class="slip" id="slip"></div><p class="mnote" id="slipN">Your wallet will ask you to sign this. Free: no transaction, no SOL.</p><div class="mact"><button class="btn o" data-x>cancel</button><button class="btn w" id="sign">sign the call</button></div></div></div>
+<div id="toast"></div>
+
+<script type="module" src="/assets/app.js"></script>
+<script type="module" src="/assets/home.js"></script>
+</body>
+</html>

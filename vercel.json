@@ -1,0 +1,12 @@
+{
+  "functions": {
+    "api/coins.js": { "maxDuration": 20 },
+    "api/chart.js": { "maxDuration": 20 },
+    "api/pm.js": { "maxDuration": 20 },
+    "api/call.js": { "maxDuration": 20 },
+    "api/board.js": { "maxDuration": 30 }
+  },
+  "headers": [
+    { "source": "/assets/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=300" }] }
+  ]
+}
