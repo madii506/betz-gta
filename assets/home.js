@@ -134,7 +134,7 @@ const markTex = canvasTex(1024, 1024, (g, w, h) => { g.clearRect(0, 0, w, h); co
   g.fillStyle = '#fff'; g.beginPath(); g.moveTo(cx, cy); g.arc(cx, cy, R0, w1 + gp, w0 + Math.PI * 2 - gp); g.closePath(); g.fill();
   const mid = (w0 + w1) / 2, ox = Math.cos(mid) * R0 * .1, oy = Math.sin(mid) * R0 * .1; g.beginPath(); g.moveTo(cx + ox, cy + oy); g.arc(cx + ox, cy + oy, R0, w0 + gp * .4, w1 - gp * .4); g.closePath(); g.fill();
   g.globalCompositeOperation = 'destination-out'; for (let i = 0; i < 260; i++) { g.fillStyle = `rgba(0,0,0,${.15 + hsh(i, 91) * .35})`; g.beginPath(); g.arc(hsh(i, 92) * w, hsh(i, 93) * h, 2 + hsh(i, 94) * 7, 0, 7); g.fill(); } }, false);
-const mk = mesh(new THREE.PlaneGeometry(1.5, 1.5), toon(0xfff4ee, { alphaMap: markTex, transparent: true, alphaTest: .3, emissive: 0xffe6dc, emissiveIntensity: .55 }), 2.55, 1.45, WALLZ + .02, scene, false); mk.userData.detail = true;
+// (no wall mural on the home screen)
 // (the wordmark lives in the page, not on the wall)
 palm(-8.5, 4.5, 6.4, .6, 5); palm(6.6, 3.8, 6.0, -.8, 3); [[-.6, 6.0, -.5], [-4.2, 5.6, .3], [7.4, 6.2, -.4]].forEach(([x, h, l], i) => palm(x, WALLZ - 1.8 - (i % 2) * 1.4, h, l, 20 + i));
 sun.position.set(9, 4.2, 7); sun.target.position.set(-1, 1, -2); sun.shadow.mapSize.set(2048, 2048);
@@ -181,7 +181,7 @@ addEventListener('resize', size); size();
 const P = innerWidth / innerHeight < .9;
 const SHOTS = P ? [
   { p: [2.6, 1.1, 8.6], t: [-.6, 1.2, -.3], f: 44 }, { p: [1.6, .55, 5.6], t: [-1.2, .9, .3], f: 46 }, { p: [.4, 2.6, 5.4], t: [-1.0, .9, .3], f: 42 }] : [
-  { p: [2.2, .72, 7.0], t: [-1.95, 1.45, -.6], f: 32 }, { p: [3.4, .55, 3.2], t: [-2.4, .95, .3], f: 36 }, { p: [1.2, 2.3, 4.4], t: [-2.2, .95, .2], f: 34 }];
+  { p: [2.4, .62, 7.6], t: [-.9, 1.75, -.6], f: 34 }, { p: [3.6, .5, 3.6], t: [-1.5, 1.25, .3], f: 38 }, { p: [1.4, 2.0, 5.2], t: [-1.3, 1.45, .2], f: 36 }];
 const sm = x => x * x * x * (x * (x * 6 - 15) + 10); const V = (a) => new THREE.Vector3(...a);
 const SHOT = 9, BLEND = 3.2; let mode = 'home', dimT = 0, dimV = 0, hopT = 3, mx = 0, my = 0;
 addEventListener('pointermove', e => { mx = e.clientX / innerWidth - .5; my = e.clientY / innerHeight - .5; });
