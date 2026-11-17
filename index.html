@@ -280,7 +280,7 @@ table.am .cl{display:flex;flex-direction:column;gap:4px}table.am .cl .bar{height
 .hub .wide{grid-column:1/-1}
 .pf{padding:16px}.pf .bsum{margin:-16px -16px 12px}
 .wl{cursor:pointer;text-decoration:underline dotted rgba(255,246,242,.35);text-underline-offset:3px}
-@media (max-width:1400px){.tab{padding:0 10px;font-size:11px}}
+@media (max-width:1650px){.tab{padding:0 9px;font-size:11px;letter-spacing:.08em}.th{gap:14px}.clk{font-size:12px}}
 
 /* ================= neon header ================= */
 .hero h1{position:relative;color:#fff8fb}
@@ -355,6 +355,26 @@ html.term .th{animation-delay:.35s}html.term .tick{animation-delay:.42s}html.ter
 /* ================= ranks ================= */
 .tier{font-family:Rubik;font-weight:900;font-size:10px;letter-spacing:.14em;text-transform:uppercase;padding:3px 8px;border-radius:3px;margin-left:8px}
 .tier.t0{background:rgba(255,246,242,.1);color:var(--dim)}.tier.t1{background:rgba(25,211,197,.18);color:#19d3c5}.tier.t2{background:rgba(176,107,255,.2);color:#c99bff}.tier.t3{background:rgba(255,79,166,.2);color:#ff7ab8}.tier.t4{background:#ffc65a;color:#2a1200}
+
+/* ================= trade ================= */
+.trade{padding:14px;display:flex;flex-direction:column;gap:10px}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:rgba(0,0,0,.3);padding:4px;border-radius:4px}
+.seg button{height:38px;border-radius:3px;font-weight:900;letter-spacing:.14em;font-size:13px;color:var(--dim)}
+.seg button.on.b{background:var(--yes);color:#04281e}.seg button.on.s{background:var(--no);color:#33060c}
+.amt{display:flex;gap:6px;flex-wrap:wrap}.amt .chip{height:32px;padding:0 12px;font-size:12px}
+.amt input{flex:1;min-width:90px;height:32px;padding:0 10px;background:rgba(0,0,0,.3);border:1px solid var(--line);border-radius:3px;color:var(--paper);font:600 13px JB;outline:none}
+.qt{display:grid;grid-template-columns:1fr auto;gap:5px 10px;font-family:JB;font-size:12px;padding:10px 12px;background:rgba(0,0,0,.25);border-radius:3px;min-height:76px}
+.qt span{color:var(--faint)}.qt b{text-align:right}
+.go2{height:48px;border-radius:3px;font-family:RB;font-weight:900;font-size:18px;letter-spacing:.08em;transition:transform .15s,filter .15s}
+.go2.b{background:var(--yes);color:#04281e}.go2.s{background:var(--no);color:#33060c}.go2:hover{transform:translateY(-2px);filter:brightness(1.08)}.go2:disabled{opacity:.4;transform:none;cursor:not-allowed}
+.bal{display:flex;justify-content:space-between;font-family:JB;font-size:11px;color:var(--faint)}
+.slip2{display:flex;gap:4px;align-items:center;font-family:JB;font-size:11px;color:var(--faint)}.slip2 .chip{height:24px;padding:0 8px;font-size:10px}
+/* ================= bag ================= */
+.bagh{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border-bottom:1px solid var(--line)}.bagh div{background:rgba(18,5,20,.6);padding:14px 16px}.bagh span{display:block;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);font-weight:700}.bagh b{font-family:RB;font-size:26px;font-weight:900}
+.bg{display:grid;grid-template-columns:34px 1fr auto auto;gap:12px;align-items:center;padding:10px 16px;border-bottom:1px solid rgba(255,246,242,.06);cursor:pointer}.bg:hover{background:rgba(255,246,242,.06)}
+.bg img,.bg .ph{width:34px;height:34px;font-size:12px}.bg b{font-family:JB}.sec{padding:10px 16px;font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);background:rgba(0,0,0,.2)}
+#alBox{grid-template-columns:1fr}
+.bell.on{background:#ffc65a!important;color:#2a1200!important}
 /* palette + share */
 .pal{width:min(560px,100%)}
 .pal input{width:100%;height:56px;padding:0 18px;background:transparent;border:0;border-bottom:1px solid var(--line);color:var(--paper);font:500 17px Rubik;outline:none}
@@ -407,7 +427,7 @@ html.term .th{animation-delay:.35s}html.term .tick{animation-delay:.42s}html.ter
 
 <section id="home">
   <div class="hero">
-    <h1 data-t="betz"><span>b</span><span>e</span><span>t</span><span>z</span></h1>
+    <h1 data-t="Betz"><span>B</span><span>e</span><span>t</span><span>z</span></h1>
     <p class="tagline">Every GTA coin is now a market.</p>
     <div class="cta">
       <button class="btn w" id="enter">enter terminal <span class="k">↵</span></button>
@@ -423,19 +443,18 @@ html.term .th{animation-delay:.35s}html.term .tick{animation-delay:.42s}html.ter
 
 <section id="term">
   <div class="th">
-    <div class="brand" id="toHome" title="back to the street"><svg viewBox="0 0 200 200"><path class="body" fill="#fff6f2" d=""/><path class="wedge" fill="#fff6f2" d=""/></svg>betz</div>
+    <div class="brand" id="toHome" title="back to the street"><svg viewBox="0 0 200 200"><path class="body" fill="#fff6f2" d=""/><path class="wedge" fill="#fff6f2" d=""/></svg>Betz</div>
     <nav class="tabs" id="tabs">
       <span class="qk"><span>Q</span></span>
       <button class="tab on" data-t="markets">markets <span class="n" id="nCoins">—</span></button>
       <button class="tab" data-t="all">all markets</button>
       <button class="tab" data-t="movers">movers</button>
-      <button class="tab" data-t="city">the city</button>
       <button class="tab" data-t="map">map</button>
       <button class="tab" data-t="hub">GTA VI hub</button>
       <button class="tab" data-t="poly">polymarket <span class="n" id="nPoly">—</span></button>
       <button class="tab" data-t="board">leaderboard</button>
-      <button class="tab" data-t="mine">my calls <span class="n" id="nMine">0</span></button>
-      <button class="tab" data-t="how">how it works</button>
+      <button class="tab" data-t="mine">my bag <span class="n" id="nMine">0</span></button>
+      <button class="tab" data-t="how">how</button>
       <span class="qk"><span>E</span></span>
     </nav>
     <span class="clk mono" id="clk">--:--:--</span>
@@ -473,9 +492,6 @@ html.term .th{animation-delay:.35s}html.term .tick{animation-delay:.42s}html.ter
     <div class="pane" data-p="movers">
       <div class="box" style="flex:1"><div class="bh">movers <span class="sp"></span><small>every GTA coin, sorted six ways, live</small></div><div class="scroll"><div class="movers" id="movers"></div></div></div>
     </div>
-    <div class="pane" data-p="city">
-      <div class="box" style="flex:1"><div class="bh">the city <span class="sp"></span><small>every GTA coin as a block · size: market cap · colour: 24h · stars: wanted level (volatility)</small></div><div class="cityw" id="city"></div></div>
-    </div>
     <div class="pane" data-p="map">
       <div class="box" style="flex:1"><div class="bh">the map <span class="sp"></span><small>across: market cap · up: 24h change · size: volume · click a blip to open it</small></div><div class="mapw" id="mapw"><canvas id="mapc"></canvas><div class="mtip" id="mtip"></div></div></div>
     </div>
@@ -496,7 +512,7 @@ html.term .th{animation-delay:.35s}html.term .tick{animation-delay:.42s}html.ter
     </div>
     <div class="pane" data-p="mine">
       <div class="box" style="flex:1">
-        <div class="bh">my calls <span class="sp"></span><small id="mineSum"></small></div>
+        <div class="bh">my bag &amp; calls <span class="sp"></span><small id="mineSum"></small></div>
         <div class="scroll" id="mine"><div class="empty">connect a wallet to see your calls.</div></div>
       </div>
     </div>
@@ -525,6 +541,7 @@ html.term .th{animation-delay:.35s}html.term .tick{animation-delay:.42s}html.ter
 
 <div class="modal" id="mWal"><div class="mbox"><div class="bh">connect a wallet <span class="sp"></span><button data-x>✕</button></div><div id="wList"></div><p class="mnote">betz only asks your wallet to sign a message when you make a call. It never asks for a transaction.</p></div></div>
 <div class="modal" id="mCall"><div class="mbox"><div class="bh">your bet slip <span class="sp"></span><button data-x>✕</button></div><div class="slip" id="slip"></div><p class="mnote" id="slipN">Your wallet will ask you to sign this. Free: no transaction, no SOL.</p><div class="mact"><button class="btn o" data-x>cancel</button><button class="btn w" id="sign">sign the call</button></div></div></div>
+<div class="modal" id="mAl"><div class="mbox"><div class="bh">price alert <span class="sp"></span><button data-x>✕</button></div><div class="calc" id="alBox"></div><p class="mnote">Alerts live in this browser. Keep the tab open; you get a pop-up and a notification when it hits.</p><div class="mact"><button class="btn o" id="alClr">clear</button><button class="btn w" id="alSet">set alert</button></div></div></div>
 <div class="modal" id="mProf"><div class="mbox" style="width:min(560px,100%)"><div class="bh">caller <span class="sp"></span><button data-x>✕</button></div><div id="prof"></div></div></div>
 <div class="modal" id="mPal"><div class="mbox pal"><input id="palq" placeholder="jump to a coin, a tab, or paste a contract" autocomplete="off"><div id="palr"></div></div></div>
 <div class="modal" id="mShare"><div class="mbox"><div class="bh">call locked <span class="sp"></span><button data-x>✕</button></div><canvas id="card" width="1200" height="675"></canvas><div class="mact"><button class="btn o" id="dl">save image</button><a class="btn w" id="tw" target="_blank" rel="noopener">post on X</a></div></div></div>

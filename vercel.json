@@ -26,6 +26,12 @@
     },
     "api/wire.js": {
       "maxDuration": 25
+    },
+    "api/bag.js": {
+      "maxDuration": 20
+    },
+    "api/rpc.js": {
+      "maxDuration": 15
     }
   },
   "headers": [
