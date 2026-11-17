@@ -14,17 +14,17 @@ function norm(t) { const s24 = t.stats24h || {}, s1 = t.stats1h || {};
     holders: t.holderCount || 0, ch1h: s1.priceChange ?? null, ch24h: s24.priceChange ?? null, vol24h: (s24.buyVolume || 0) + (s24.sellVolume || 0), buys24h: s24.numBuys || 0, sells24h: s24.numSells || 0,
     supply: +(t.totalSupply || t.circSupply || 0), st: { m5: stf(t.stats5m), h1: stf(t.stats1h), h6: stf(t.stats6h), h24: stf(t.stats24h) }, audit: t.audit || null, twitter: t.twitter || null, website: t.website || null, dev: t.dev || null, grad: t.graduatedAt || null, orgLabel: t.organicScoreLabel || null, isVerified: !!t.isVerified, tags: t.tags || [], created: t.createdAt || (t.firstPool && t.firstPool.createdAt) || null, organic: t.organicScore || 0, verified: !!(t.audit && t.audit.isSus === false) }; }
 // real GTA coins only: on-theme name, a real market (liquidity, holders, organic flow), not flagged, and no copycats of a bigger coin
-function quality(t) { const a = t.audit || {}; const name = `${t.name} ${t.symbol}`;
-  if (!WORDS.test(name) || BAD.test(name)) return false; if (a.isSus) return false;
-  if ((t.mcap || 0) < 15000 || (t.liquidity || 0) < 5000 || (t.holderCount || 0) < 80) return false;
-  const s24 = t.stats24h || {}; if ((s24.numTraders || 0) < 10 && ((s24.buyVolume || 0) + (s24.sellVolume || 0)) < 1000) return false;
-  if ((t.organicScore || 0) < 5) return false; return true; }
+function quality(t) { const a = t.audit || {}; const name = `${t.name} ${t.symbol}`; const mc = t.mcap || 0, liq = t.liquidity || 0, h = t.holderCount || 0, s24 = t.stats24h || {}, org = t.organicScore || 0;
+  if (!WORDS.test(name) || BAD.test(name) || a.isSus) return false;
+  if (mc < 15000 || h < 100 || liq < 3000) return false;
+  if (liq > mc * .6 && h < 2000) return false;                       // a pool as big as the coin with no holders: fake liquidity
+  if (org < 25 && !(h >= 2000 && (s24.numTraders || 0) >= 200)) return false;   // no organic trading: botted or dead
+  return true; }
 async function gtaCoins() { return cached('coins', 30000, async () => {
   const lists = await Promise.allSettled(QUERIES.map(q => getJSON(JUP + encodeURIComponent(q))));
   const seen = new Map();
   for (const l of lists) if (l.status === 'fulfilled' && Array.isArray(l.value)) for (const t of l.value) { if (!t || !t.id || seen.has(t.id) || !quality(t)) continue; seen.set(t.id, norm(t)); }
-  const all = [...seen.values()].sort((a, b) => b.mcap - a.mcap); const top = new Map(); const out = [];
-  for (const c of all) { const k = (c.symbol || '').toLowerCase().replace(/[^a-z0-9]/g, ''); const big = top.get(k); if (big && c.mcap < big * .25) continue; if (!big) top.set(k, c.mcap); out.push(c); }
+  const out = [...seen.values()].sort((a, b) => b.mcap - a.mcap);
   return out.slice(0, 60); }); }
 async function tokensByMint(mints) { const out = {}; for (let i = 0; i < mints.length; i += 90) { const part = mints.slice(i, i + 90); const a = await getJSON(JUP + part.join(',')).catch(() => []); for (const t of a || []) out[t.id] = norm(t); } return out; }
 // ---- markets: every call is its own 24h prediction against the coin's market cap at the moment it was made
