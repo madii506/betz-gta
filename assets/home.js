@@ -27,9 +27,9 @@ const stucco = canvasTex(2048, 512, (g, w, h) => { g.fillStyle = '#f3a294'; g.fi
   for (let i = 0; i < 900; i++) { const x = hsh(i, 11) * w, y = hsh(i, 12) * h, r = 10 + hsh(i, 13) * 40; g.fillStyle = hsh(i, 14) > .5 ? 'rgba(255,200,185,.05)' : 'rgba(170,70,90,.04)'; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); }
   const gb2 = g.createLinearGradient(0, h * .8, 0, h); gb2.addColorStop(0, 'rgba(120,40,80,0)'); gb2.addColorStop(1, 'rgba(120,40,80,.25)'); g.fillStyle = gb2; g.fillRect(0, h * .8, w, h * .2); });
 // the deco wall: stucco, speed lines, glass blocks, a fin, a planter
-const wall = mesh(new THREE.PlaneGeometry(30, 3.0), toon(0xffffff, { map: stucco }), 0, 1.5, WALLZ, scene, false);
-[2.42, 2.56].forEach(y => mesh(new THREE.BoxGeometry(30, .05, .08), toon(0xf9c3b4), 0, y, WALLZ + .04));
-mesh(new THREE.BoxGeometry(30, .3, .34), toon(0xf6c2b0), 0, 3.05, WALLZ + .1); mesh(new THREE.BoxGeometry(30, .12, .4), toon(0xfbd6c6), 0, 3.24, WALLZ + .12); mesh(new THREE.BoxGeometry(30, .18, .2), toon(0xe9806f), 0, .09, WALLZ + .05, scene, false);
+const wall = mesh(new THREE.PlaneGeometry(120, 3.0), toon(0xffffff, { map: stucco }), 0, 1.5, WALLZ, scene, false);
+[2.42, 2.56].forEach(y => mesh(new THREE.BoxGeometry(120, .05, .08), toon(0xf9c3b4), 0, y, WALLZ + .04));
+mesh(new THREE.BoxGeometry(120, .3, .34), toon(0xf6c2b0), 0, 3.05, WALLZ + .1); mesh(new THREE.BoxGeometry(120, .12, .4), toon(0xfbd6c6), 0, 3.24, WALLZ + .12); mesh(new THREE.BoxGeometry(120, .18, .2), toon(0xe9806f), 0, .09, WALLZ + .05, scene, false);
 const gb = canvasTex(512, 512, (g, w, h) => { g.fillStyle = '#c9dfe0'; g.fillRect(0, 0, w, h); const n = 8, s = w / n; for (let i = 0; i < n; i++) for (let k = 0; k < n; k++) { const gr = g.createRadialGradient(i * s + s / 2, k * s + s / 2, 4, i * s + s / 2, k * s + s / 2, s * .6); gr.addColorStop(0, '#fff3d8'); gr.addColorStop(.6, '#9fc8d0'); gr.addColorStop(1, '#6f9aa8'); g.fillStyle = gr; g.fillRect(i * s + 3, k * s + 3, s - 6, s - 6); } });
 function glassBlocks(x, y, w, h) { mesh(new THREE.BoxGeometry(w + .14, h + .14, .08), toon(0xfbd6c6), x, y, WALLZ + .03); const m = mesh(new THREE.PlaneGeometry(w, h), toon(0xffffff, { map: gb }), x, y, WALLZ + .075, scene, false); m.userData.detail = true; }
 function fin(x) { mesh(new RoundedBoxGeometry(.32, 3.9, .34, 2, .06), toon(0xf6c2b0), x, 1.95, WALLZ + .17); [3.3, 3.55, 3.8].forEach(y => mesh(new THREE.BoxGeometry(.36, .05, .38), toon(0xe9806f), x, y, WALLZ + .17)); }
@@ -37,8 +37,8 @@ const sign = canvasTex(1024, 256, (g, w, h) => { g.clearRect(0, 0, w, h); g.font
 // ground: sidewalk, curb, asphalt with a dark wet patch
 const asphalt = canvasTex(1024, 1024, (g, w, h) => { g.fillStyle = '#5e4a63'; g.fillRect(0, 0, w, h); for (let i = 0; i < 9000; i++) { g.fillStyle = hsh(i, 31) > .5 ? 'rgba(255,220,220,.05)' : 'rgba(20,8,30,.08)'; g.fillRect(hsh(i, 32) * w, hsh(i, 33) * h, 2, 2); } for (let i = 0; i < 6; i++) { g.fillStyle = 'rgba(25,10,30,.18)'; g.beginPath(); g.ellipse(hsh(i, 61) * w, hsh(i, 62) * h, 60 + hsh(i, 63) * 120, 30 + hsh(i, 64) * 60, hsh(i, 65) * 3, 0, 7); g.fill(); } });
 asphalt.wrapS = asphalt.wrapT = THREE.RepeatWrapping; asphalt.repeat.set(5, 5);
-const ground = mesh(new THREE.PlaneGeometry(60, 40), new THREE.MeshStandardMaterial({ map: asphalt, roughness: .45, metalness: .1, envMapIntensity: .35, transparent: true, opacity: .72 }), 0, 0, 0, scene, false); ground.rotation.x = -Math.PI / 2;
-mesh(new THREE.BoxGeometry(30, .16, 1.3), toon(0xe7c9bd), 0, .08, WALLZ + .65, scene, false); mesh(new THREE.BoxGeometry(30, .16, .12), toon(0xf2c23c), 0, .08, WALLZ + 1.32, scene, false);
+const ground = mesh(new THREE.PlaneGeometry(160, 80), new THREE.MeshStandardMaterial({ map: asphalt, roughness: .45, metalness: .1, envMapIntensity: .35, transparent: true, opacity: .72 }), 0, 0, 0, scene, false); ground.rotation.x = -Math.PI / 2;
+mesh(new THREE.BoxGeometry(120, .16, 1.3), toon(0xe7c9bd), 0, .08, WALLZ + .65, scene, false); mesh(new THREE.BoxGeometry(120, .16, .12), toon(0xf2c23c), 0, .08, WALLZ + 1.32, scene, false);
 const frondTex = canvasTex(1024, 256, (g, w, h) => { g.clearRect(0, 0, w, h); g.fillStyle = '#fff';
   g.beginPath(); g.moveTo(0, h / 2 - 7); g.lineTo(w, h / 2 - 1); g.lineTo(w, h / 2 + 1); g.lineTo(0, h / 2 + 7); g.fill();
   for (let i = 0; i < 70; i++) { const x = 10 + i * 14.3, t = x / w, len = (h / 2 - 4) * Math.sin(Math.PI * Math.min(1, t * 1.1 + .05)) * (.8 + .2 * hsh(i, 41)), wd = 7 - t * 4;
