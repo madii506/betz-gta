@@ -7,10 +7,11 @@ async function getJSON(url, opt = {}) { const c = new AbortController(); const t
 function send(res, code, body, maxAge = 0) { res.statusCode = code; res.setHeader('content-type', 'application/json'); res.setHeader('cache-control', maxAge ? `public, s-maxage=${maxAge}, stale-while-revalidate=${maxAge * 4}` : 'no-store'); res.end(JSON.stringify(body)); }
 const QUERIES = ['gta', 'gta6', 'gta vi', 'gtavi', 'vice city', 'lucia', 'leonida', 'rockstar', 'jason duval', 'grand theft'];
 const WORDS = /gta|grand ?theft|vice ?city|lucia|leonida|rockstar|duval|wasted|hesoyam|los santos|trevor|niko bellic|cj\b/i;
+function stf(x) { x = x || {}; return { pc: x.priceChange ?? null, vol: (x.buyVolume || 0) + (x.sellVolume || 0), bv: x.buyVolume || 0, sv: x.sellVolume || 0, buys: x.numBuys || 0, sells: x.numSells || 0, traders: x.numTraders || 0, net: x.numNetBuyers ?? null, org: x.numOrganicBuyers ?? null, hc: x.holderChange ?? null, lc: x.liquidityChange ?? null }; }
 function norm(t) { const s24 = t.stats24h || {}, s1 = t.stats1h || {};
   return { mint: t.id, name: t.name, symbol: t.symbol, icon: t.icon || null, launchpad: t.launchpad || null, mcap: t.mcap || 0, fdv: t.fdv || 0, price: t.usdPrice || 0, liq: t.liquidity || 0,
     holders: t.holderCount || 0, ch1h: s1.priceChange ?? null, ch24h: s24.priceChange ?? null, vol24h: (s24.buyVolume || 0) + (s24.sellVolume || 0), buys24h: s24.numBuys || 0, sells24h: s24.numSells || 0,
-    supply: +(t.totalSupply || t.circSupply || 0), created: t.createdAt || (t.firstPool && t.firstPool.createdAt) || null, organic: t.organicScore || 0, verified: !!(t.audit && t.audit.isSus === false) }; }
+    supply: +(t.totalSupply || t.circSupply || 0), st: { m5: stf(t.stats5m), h1: stf(t.stats1h), h6: stf(t.stats6h), h24: stf(t.stats24h) }, audit: t.audit || null, twitter: t.twitter || null, website: t.website || null, dev: t.dev || null, grad: t.graduatedAt || null, orgLabel: t.organicScoreLabel || null, isVerified: !!t.isVerified, tags: t.tags || [], created: t.createdAt || (t.firstPool && t.firstPool.createdAt) || null, organic: t.organicScore || 0, verified: !!(t.audit && t.audit.isSus === false) }; }
 async function gtaCoins() { return cached('coins', 30000, async () => {
   const lists = await Promise.allSettled(QUERIES.map(q => getJSON(JUP + encodeURIComponent(q))));
   const seen = new Map();
