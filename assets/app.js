@@ -49,7 +49,7 @@ let cashV = 0; function cashTo(v) { const a = cashV, t0 = performance.now(); con
 
 // ---------------------------------------------------------------- coins
 async function loadCoins() { try { const j = await api('/api/coins'); S.prev = Object.fromEntries((S.coins || []).map(c => [c.mint, c.mcap])); S.coins = j.coins || []; S.byMint = Object.fromEntries(S.coins.map(c => [c.mint, c])); coinsOk = true; progress();
-    if (!S.sel && S.coins[0]) S.sel = S.coins[0].mint; renderStats(); renderRows(true); if (!$('#det .mkts')) renderDet(); else softHead(); renderMovers(); renderMap(); renderHub(); if (S.tab === 'city') renderCity(); $('#upd').textContent = 'updated ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
+    if (!S.sel && S.coins[0]) S.sel = S.coins[0].mint; renderStats(); renderRows(true); checkAlerts(); if (!$('#det .mkts')) renderDet(); else softHead(); renderMovers(); renderMap(); renderHub(); $('#upd').textContent = 'updated ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
   catch (e) { coinsOk = true; progress(); $('#rows').innerHTML = `<div class="empty">couldn't reach Jupiter right now (${esc(e.message)}). retrying…</div>`; } }
 function ico(c, big) { return c.icon ? `<img src="${esc(c.icon)}" alt="" loading="lazy" onerror="this.outerHTML='<div class=ph>${esc((c.symbol || '?')[0])}</div>'">` : `<div class="ph">${esc((c.symbol || '?')[0])}</div>`; }
 function renderStats() { const C = S.coins; if (C.length && $('#fCoins')) $('#fCoins').textContent = C.length; $('#sCoins').textContent = C.length; $('#nCoins').textContent = C.length; countUp($('#sMcap'), C.reduce((a, c) => a + c.mcap, 0), money); countUp($('#sVol'), C.reduce((a, c) => a + c.vol24h, 0), money);
@@ -83,7 +83,7 @@ $$('.chip[data-s]').forEach(b => b.onclick = () => { S.sort = b.dataset.s; $$('.
 function myOpen(m, k) { return (S.board?.mine || []).find(c => c.mint === m && c.mkt === k && c.status === 'open'); }
 function renderDet() { const c = S.byMint[S.sel]; const D = $('#det'); if (!c) { D.innerHTML = '<div class="empty">pick a GTA coin.</div>'; return; }
   const odds = S.board?.odds?.[c.mint] || {};
-  D.innerHTML = `<div class="dh">${ico(c, 1)}<div><h2>${esc(c.name)}</h2><div class="sub"><span>$${esc(c.symbol)}</span><button id="cp">${short(c.mint)} ⧉</button><a href="https://pump.fun/coin/${c.mint}" target="_blank" rel="noopener">pump.fun ↗</a><a href="https://dexscreener.com/solana/${c.mint}" target="_blank" rel="noopener">chart ↗</a><a href="https://jup.ag/tokens/${c.mint}" target="_blank" rel="noopener">jup ↗</a>${c.twitter ? `<a href="${esc(c.twitter)}" target="_blank" rel="noopener">𝕏 ↗</a>` : ''}${c.website ? `<a href="${esc(c.website)}" target="_blank" rel="noopener">site ↗</a>` : ''}${c.dev ? `<a href="https://solscan.io/account/${esc(c.dev)}" target="_blank" rel="noopener">dev ${short(c.dev)}</a>` : ''}<button id="star">${watching(c.mint) ? '★ watching' : '☆ watch'}</button></div></div>
+  D.innerHTML = `<div class="dh">${ico(c, 1)}<div><h2>${esc(c.name)}</h2><div class="sub"><span>$${esc(c.symbol)}</span><button id="cp">${short(c.mint)} ⧉</button><a href="https://pump.fun/coin/${c.mint}" target="_blank" rel="noopener">pump.fun ↗</a><a href="https://dexscreener.com/solana/${c.mint}" target="_blank" rel="noopener">chart ↗</a><a href="https://jup.ag/tokens/${c.mint}" target="_blank" rel="noopener">jup ↗</a>${c.twitter ? `<a href="${esc(c.twitter)}" target="_blank" rel="noopener">𝕏 ↗</a>` : ''}${c.website ? `<a href="${esc(c.website)}" target="_blank" rel="noopener">site ↗</a>` : ''}${c.dev ? `<a href="https://solscan.io/account/${esc(c.dev)}" target="_blank" rel="noopener">dev ${short(c.dev)}</a>` : ''}<button id="bell" class="bell${alertOf(c.mint) ? ' on' : ''}">${alertOf(c.mint) ? '🔔 alert set' : '🔔 alert'}</button><button id="star">${watching(c.mint) ? '★ watching' : '☆ watch'}</button></div></div>
     <div class="px"><div class="wl2">WANTED ${wanted(c)}</div><b data-v="${c.mcap}">${money(c.mcap)}</b><span class="${cls(c.ch24h)}">${pct(c.ch24h)} 24h</span></div></div>
     <div class="grid"><div><span>price</span><b>${money(c.price)}</b></div><div><span>1h</span><b class="${cls(c.ch1h)}">${pct(c.ch1h)}</b></div><div><span>24h volume</span><b>${money(c.vol24h)}</b></div><div><span>holders</span><b>${(c.holders || 0).toLocaleString()}</b></div>
     <div><span>liquidity</span><b>${money(c.liq)}</b></div><div><span>buys / sells 24h</span><b>${(c.buys24h || 0).toLocaleString()} / ${(c.sells24h || 0).toLocaleString()}</b></div><div><span>launchpad</span><b>${esc(c.launchpad || '—')}</b></div><div><span>age</span><b>${c.created ? ago(new Date(c.created).getTime()) : '—'}</b></div></div>
@@ -94,6 +94,8 @@ function renderDet() { const c = S.byMint[S.sel]; const D = $('#det'); if (!c) {
         <div class="bar"><i style="width:${y == null ? 0 : y * 100}%"></i><u style="width:${y == null ? 0 : (1 - y) * 100}%"></u></div>
         <div class="n">${n ? n + ' open call' + (n === 1 ? '' : 's') : 'no calls yet · be first'}</div>
         ${mine ? `<div class="mine">your call: <b class="${mine.side === 'Y' ? 'up' : 'dn'}">${mine.side === 'Y' ? 'YES' : 'NO'}</b> at ${money(mine.mcap0)} · graded in ${left(mine.due)}</div>` : `<div class="yn"><button class="y" data-side="Y">YES</button><button class="no" data-side="N">NO</button></div>`}</div>`; }).join('')}</div>
+    <div class="two"><div class="box"><div class="bh">trade $${esc(c.symbol)} <span class="sp"></span><small>Jupiter · you sign in your wallet</small></div><div class="trade" id="trade"></div></div>
+    <div class="box"><div class="bh">your position <span class="sp"></span><small id="posT"></small></div><div id="pos"></div></div></div>
     <div class="two"><div class="box"><div class="bh">order flow <span class="sp"></span><small>Jupiter · all pools</small></div>${flow(c)}</div>
     <div class="box"><div class="bh">safety check <span class="sp"></span><small>${c.orgLabel ? 'organic: ' + esc(c.orgLabel) : ''}</small></div>${safety(c)}</div></div>
     <div class="two"><div class="box"><div class="bh">what if <span class="sp"></span><small>market cap calculator</small></div><div class="calc"><label>you put in <span>$</span><input id="cIn" type="number" min="0" value="100"></label><label>it hits <span>$</span><input id="cTo" type="number" min="0" value="${Math.round((c.mcap * 5) / 1e5) * 1e5 || 1000000}"></label><div id="cOut"></div><div class="presets">${[2, 5, 10, 50].map(x => `<button class="chip" data-x="${x}">${x}x</button>`).join('')}<button class="chip" data-x="m1">$1M</button><button class="chip" data-x="m100">$100M</button></div></div></div>
@@ -102,6 +104,7 @@ function renderDet() { const c = S.byMint[S.sel]; const D = $('#det'); if (!c) {
     <div class="box"><div class="bh">top holders <span class="sp"></span><small id="t10"></small></div><div id="hds"><div class="empty">loading…</div></div></div></div>`;
   $('#cp').onclick = () => { navigator.clipboard?.writeText(c.mint); toast('contract copied'); };
   $('#star').onclick = () => { toggleWatch(c.mint); renderDet(); renderRows(); };
+  $('#bell').onclick = () => alertModal(c); tradeUI(c); posUI(c);
   $('#cmode').onclick = () => { S.cmode = S.cmode === 'c' ? 'l' : 'c'; store.set('betz:cm', S.cmode); renderDet(); };
   const calc = () => { const a = +$('#cIn').value || 0, t = +$('#cTo').value || 0, x = c.mcap ? t / c.mcap : 0; $('#cOut').innerHTML = `<b class="${x >= 1 ? 'up' : 'dn'}">${money(a * x)}</b><span>${x ? x.toFixed(x >= 10 ? 0 : 2) + 'x from ' + money(c.mcap) : '—'}</span>`; };
   $('#cIn').oninput = calc; $('#cTo').oninput = calc; $$('.calc .chip').forEach(b => b.onclick = () => { const v = b.dataset.x; $('#cTo').value = v === 'm1' ? 1e6 : v === 'm100' ? 1e8 : Math.round(c.mcap * +v); calc(); }); calc();
@@ -256,10 +259,13 @@ function renderFeed() { const R = S.board?.recent || []; $('#nRecent').textConte
 function renderBoard() { const B = S.board?.board || []; if (!B.length) { $('#board').innerHTML = '<div class="empty">no graded calls yet. the first winners show up 24 hours after the first calls.</div>'; return; }
   const T = S.board?.totals || {}, best = B.filter(w => w.won + w.lost >= 3).sort((a, b) => b.acc - a.acc)[0];
   $('#board').innerHTML = `<div class="bsum"><div><span>calls made</span><b>${T.calls || 0}</b></div><div><span>graded</span><b>${T.graded || 0}</b></div><div><span>callers</span><b>${T.callers || 0}</b></div><div><span>sharpest (3+ graded)</span><b>${best ? short(best.wallet) + ' · ' + Math.round(best.acc * 100) + '%' : '—'}</b></div></div><table><thead><tr><th>#</th><th>caller</th><th>won</th><th>lost</th><th>open</th><th>accuracy</th><th>best streak</th></tr></thead><tbody>${B.map((w, i) => `<tr class="${w.wallet === S.wallet ? 'me' : ''}"><td class="rk">${i + 1}</td><td><span class="wl" data-w="${w.wallet}">${short(w.wallet)}</span>${tier(w.won)}</td><td class="up">${w.won}</td><td class="dn">${w.lost}</td><td>${w.open}</td><td>${w.acc == null ? '—' : Math.round(w.acc * 100) + '%'}</td><td>${w.best}</td></tr>`).join('')}</tbody></table>`; }
-function renderMine() { const M = S.board?.mine || []; $('#nMine').textContent = M.length;
-  if (!S.wallet) { $('#mine').innerHTML = '<div class="empty">connect a wallet to see your calls.</div>'; $('#mineSum').textContent = ''; return; }
+function renderMine() { const M = S.board?.mine || []; const G = S.bag?.gta || []; $('#nMine').textContent = G.length + M.length;
+  if (!S.wallet) { $('#mine').innerHTML = '<div class="empty">connect a wallet to see your GTA bag and your calls.</div>'; $('#mineSum').textContent = ''; return; }
   const w = M.filter(c => c.status === 'won').length, l = M.filter(c => c.status === 'lost').length; $('#mineSum').innerHTML = `${M.length} calls · ${w} won · ${l} lost ${tier(w)}`;
-  $('#mine').innerHTML = M.length ? M.map(c => { const k = S.byMint[c.mint]; return `<div class="fi"><span class="pill ${c.side}">${c.side === 'Y' ? 'YES' : 'NO'}</span><span><b>$${esc(k?.symbol || short(c.mint))}</b> · ${mq(c.mkt)}<br><span class="when">called at ${money(c.mcap0)}${c.mcap1 ? ' · graded at ' + money(c.mcap1) : ''}</span></span><span class="when">${c.status === 'open' ? 'graded in ' + left(c.due) : `<span class="pill ${c.status}">${c.status}</span>`}</span></div>`; }).join('') : '<div class="empty">no calls yet. pick a GTA coin and hit YES or NO.</div>'; }
+  const bag = S.bag ? `<div class="bagh"><div><span>GTA bag value</span><b>${money(S.bag.total || 0)}</b></div><div><span>GTA coins held</span><b>${G.length}</b></div><div><span>SOL</span><b>${(S.bag.sol || 0).toFixed(3)}</b></div></div>
+    <div class="sec">your GTA coins</div>${G.length ? G.map(x => { const c = S.byMint[x.mint] || { symbol: x.symbol }; return `<div class="bg" data-m="${x.mint}">${ico(c)}<span><b style="font-family:Rubik">$${esc(c.symbol)}</b><br><span class="when">${x.ui.toLocaleString(undefined, { maximumFractionDigits: 2 })} tokens</span></span><span class="${cls(c.ch24h)} mono">${pct(c.ch24h)}</span><b>${money(x.usd)}</b></div>`; }).join('') : '<div class="empty">no GTA coins in this wallet yet. open a coin and buy from the trade box.</div>'}` : '<div class="empty">loading your bag…</div>';
+  const calls = M.length ? M.map(c => { const k = S.byMint[c.mint]; return `<div class="fi"><span class="pill ${c.side}">${c.side === 'Y' ? 'YES' : 'NO'}</span><span><b>$${esc(k?.symbol || short(c.mint))}</b> · ${mq(c.mkt)}<br><span class="when">called at ${money(c.mcap0)}${c.mcap1 ? ' · graded at ' + money(c.mcap1) : ''}</span></span><span class="when">${c.status === 'open' ? 'graded in ' + left(c.due) : `<span class="pill ${c.status}">${c.status}</span>`}</span></div>`; }).join('') : '<div class="empty">no calls yet. pick a GTA coin and hit YES or NO.</div>';
+  $('#mine').innerHTML = bag + '<div class="sec">your calls</div>' + calls; $$('#mine .bg').forEach(r => r.onclick = () => { tab('markets'); select(r.dataset.m, 1); }); }
 
 // ---------------------------------------------------------------- polymarket
 async function loadPM() { try { S.pm = await api('/api/pm'); const E = S.pm.events || []; $('#nPoly').textContent = E.length; if (E.length && $('#fPm')) $('#fPm').textContent = E.length; if (S.tab === 'hub') renderHub();
@@ -271,7 +277,7 @@ async function loadPM() { try { S.pm = await api('/api/pm'); const E = S.pm.even
 
 // ---------------------------------------------------------------- tabs + keys
 const TABS = $$('.tab').map(t => t.dataset.t);
-function tab(t) { $$('.tab').forEach(b => b.classList.toggle('on', b.dataset.t === t)); $$('.pane').forEach(p => p.classList.toggle('on', p.dataset.p === t)); S.tab = t; if (t === 'markets') renderDet(); if (t === 'map') requestAnimationFrame(renderMap); if (t === 'hub') renderHub(); if (t === 'movers') renderMovers(); if (t === 'city') requestAnimationFrame(renderCity); if (t === 'all') renderAll(); if (t === 'hub' && !S.news) loadNews(); if (t === 'markets') loadWire(); }
+function tab(t) { $$('.tab').forEach(b => b.classList.toggle('on', b.dataset.t === t)); $$('.pane').forEach(p => p.classList.toggle('on', p.dataset.p === t)); S.tab = t; if (t === 'markets') renderDet(); if (t === 'map') requestAnimationFrame(renderMap); if (t === 'hub') renderHub(); if (t === 'movers') renderMovers(); if (t === 'all') renderAll(); if (t === 'hub' && !S.news) loadNews(); if (t === 'markets') loadWire(); }
 $$('.tab').forEach(b => b.onclick = () => tab(b.dataset.t)); S.tab = 'markets';
 addEventListener('keydown', e => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); if (!H.classList.contains('term')) openTerm(); pal(); return; } if (e.target.matches('input')) { if (e.key === 'Escape') e.target.blur(); return; } if ($('.modal.on')) { if (e.key === 'Escape') closeModals(); if (e.key === 'Enter' && $('#mCall.on')) $('#sign').click(); return; }
   const k = e.key.toLowerCase();
@@ -288,13 +294,15 @@ addEventListener('keydown', e => { if ((e.metaKey || e.ctrlKey) && e.key.toLower
 
 // ---------------------------------------------------------------- the command line
 const findCoin = q => { q = (q || '').replace(/^\$/, '').toLowerCase(); return S.coins.find(c => c.symbol.toLowerCase() === q) || S.coins.find(c => c.name.toLowerCase().includes(q)) || S.coins.find(c => c.mint.toLowerCase().startsWith(q)); };
-const HELP = 'open <coin> · call <coin> <up|50|2x|10x|rug> <yes|no> · whois <wallet> · price <coin> · watch <coin> · sort <mcap|24h|volume|new|called|watch> · markets · movers · map · hub · poly · board · mine · how · connect · home';
+const HELP = 'buy <coin> <sol> · sell <coin> <%> · alert <coin> · open <coin> · call <coin> <up|50|2x|10x|rug> <yes|no> · whois <wallet> · price <coin> · watch <coin> · sort <mcap|24h|volume|new|called|watch> · markets · movers · map · hub · poly · board · mine · how · connect · home';
 const hist = []; let hi = 0;
 function run(line) { const a = line.trim().split(/\s+/), c0 = (a[0] || '').toLowerCase(), out = m => $('#cmdO').textContent = m; if (!c0) return; hist.unshift(line); hi = -1;
-  const tabsMap = { markets: 'markets', city: 'city', movers: 'movers', map: 'map', hub: 'hub', gta: 'hub', poly: 'poly', polymarket: 'poly', board: 'board', leaderboard: 'board', mine: 'mine', calls: 'mine', how: 'how', help2: 'how' };
+  const tabsMap = { markets: 'markets', movers: 'movers', map: 'map', hub: 'hub', gta: 'hub', poly: 'poly', polymarket: 'poly', board: 'board', leaderboard: 'board', mine: 'mine', calls: 'mine', how: 'how', help2: 'how' };
   if (c0 === 'help' || c0 === '?') return out(HELP);
   if (tabsMap[c0]) { tab(tabsMap[c0]); return out('→ ' + tabsMap[c0]); }
   if (c0 === 'home' || c0 === 'exit') { openHome(); return; }
+  if ((c0 === 'buy' || c0 === 'sell') && a[1]) { const c = findCoin(a[1]); if (!c) return out('no GTA coin called "' + a[1] + '"'); tab('markets'); select(c.mint, 1); T.side = c0 === 'buy' ? 'b' : 's'; const v = parseFloat(a[2]); if (v > 0) { if (c0 === 'buy') T.amt = v; else T.pct = Math.min(100, Math.round(v)); } setTimeout(() => { tradeUI(c, false); $('#trade')?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 60); return out('review the quote, then hit ' + c0.toUpperCase()); }
+  if (c0 === 'alert' && a[1]) { const c = findCoin(a[1]); if (!c) return out('no GTA coin called "' + a[1] + '"'); alertModal(c); return out('set your levels'); }
   if (c0 === 'whois' && a[1]) { profile(a[1]); return out('loading ' + short(a[1])); }
   if (c0 === 'news') { tab('hub'); return out('→ hub · news'); }
   if (c0 === 'all') { tab('all'); return out('→ all markets'); }
@@ -309,6 +317,63 @@ function run(line) { const a = line.trim().split(/\s+/), c0 = (a[0] || '').toLow
   out('unknown command. type help'); }
 $('#cmd').onsubmit = e => { e.preventDefault(); const i = $('#cmdI'); run(i.value); i.value = ''; };
 $('#cmdI').onkeydown = e => { if (e.key === 'ArrowUp' && hist.length) { e.preventDefault(); hi = Math.min(hist.length - 1, hi + 1); e.target.value = hist[hi]; } if (e.key === 'ArrowDown') { e.preventDefault(); hi = Math.max(-1, hi - 1); e.target.value = hi < 0 ? '' : hist[hi]; } if (e.key === 'Escape') e.target.blur(); };
+
+// ---------------------------------------------------------------- trading: Jupiter route, built for your wallet, you sign
+const WSOL = 'So11111111111111111111111111111111111111112';
+const T = { side: 'b', amt: .1, pct: 50, slip: 300, q: null, busy: false };
+async function loadBag() { if (!S.wallet) { S.bag = null; return; } try { S.bag = await api('/api/bag?wallet=' + S.wallet); } catch (e) { S.bag = { sol: 0, gta: [], total: 0, err: e.message }; } renderMine(); const c = S.byMint[S.sel]; if (c && $('#pos')) { posUI(c); tradeUI(c, true); } }
+function held(m) { return (S.bag?.gta || []).find(x => x.mint === m); }
+function posUI(c) { const el = $('#pos'); if (!el) return; if (!S.wallet) { el.innerHTML = '<div class="empty">connect a wallet to see what you hold.</div>'; $('#posT').textContent = ''; return; }
+  const h = held(c.mint); $('#posT').textContent = S.bag ? (S.bag.sol || 0).toFixed(3) + ' SOL in wallet' : '';
+  el.innerHTML = h ? `<div class="bagh" style="grid-template-columns:1fr 1fr"><div><span>you hold</span><b>${money(h.usd)}</b></div><div><span>tokens</span><b style="font-size:18px">${h.ui.toLocaleString(undefined, { maximumFractionDigits: 0 })}</b></div></div>
+    <div class="sfs">${[['share of supply', c.supply ? (h.ui / c.supply * 100).toFixed(4) + '%' : '—'], ['if it 2x', money(h.usd * 2)], ['if it 10x', money(h.usd * 10)], ['if it hits $10M', c.mcap ? money(h.usd * 1e7 / c.mcap) : '—']].map(([a, b]) => `<div class="sf"><i class="q">·</i><span>${a}</span><b>${b}</b></div>`).join('')}</div>`
+    : `<div class="empty">you don't hold $${esc(c.symbol)} yet.</div>`; }
+function tradeUI(c, keep) { const el = $('#trade'); if (!el) return; if (!keep) { T.q = null; } const h = held(c.mint), buy = T.side === 'b';
+  el.innerHTML = `<div class="seg"><button class="b${buy ? ' on' : ''}" data-sd="b">BUY</button><button class="s${!buy ? ' on' : ''}" data-sd="s">SELL</button></div>
+    <div class="amt">${buy ? [.05, .1, .25, .5, 1].map(v => `<button class="chip${T.amt === v ? ' on' : ''}" data-a="${v}">${v} SOL</button>`).join('') + `<input id="tAmt" type="number" min="0" step="0.01" placeholder="custom SOL" value="${[.05, .1, .25, .5, 1].includes(T.amt) ? '' : T.amt}">` : [25, 50, 75, 100].map(v => `<button class="chip${T.pct === v ? ' on' : ''}" data-p="${v}">${v}%</button>`).join('')}</div>
+    <div class="bal"><span>${buy ? 'wallet: ' + (S.bag ? (S.bag.sol || 0).toFixed(3) + ' SOL' : S.wallet ? '…' : 'not connected') : 'you hold: ' + (h ? h.ui.toLocaleString(undefined, { maximumFractionDigits: 0 }) + ' $' + esc(c.symbol) : '0')}</span><span class="slip2">slippage ${[100, 300, 500].map(v => `<button class="chip${T.slip === v ? ' on' : ''}" data-sl="${v}">${v / 100}%</button>`).join('')}</span></div>
+    <div class="qt" id="tQ"><span>quote</span><b>…</b></div>
+    <button class="go2 ${T.side}" id="tGo">${S.wallet ? (buy ? 'BUY $' : 'SELL $') + esc(c.symbol) : 'CONNECT TO TRADE'}</button>`;
+  $$('#trade [data-sd]').forEach(b => b.onclick = () => { T.side = b.dataset.sd; tradeUI(c); });
+  $$('#trade [data-a]').forEach(b => b.onclick = () => { T.amt = +b.dataset.a; tradeUI(c); });
+  $$('#trade [data-p]').forEach(b => b.onclick = () => { T.pct = +b.dataset.p; tradeUI(c); });
+  $$('#trade [data-sl]').forEach(b => b.onclick = () => { T.slip = +b.dataset.sl; tradeUI(c); });
+  const ai = $('#tAmt'); if (ai) ai.oninput = () => { const v = +ai.value; if (v > 0) { T.amt = v; $$('#trade [data-a]').forEach(x => x.classList.remove('on')); quote(c); } };
+  $('#tGo').onclick = () => S.wallet ? swap(c) : connect(); quote(c); }
+function tradeIn(c) { if (T.side === 'b') return { inM: WSOL, outM: c.mint, amount: String(Math.round(T.amt * 1e9)) }; const h = held(c.mint); if (!h) return null; const raw = BigInt(h.raw) * BigInt(T.pct) / 100n; return raw > 0n ? { inM: c.mint, outM: WSOL, amount: raw.toString(), dec: h.dec } : null; }
+let qSeq = 0;
+async function quote(c) { const el = $('#tQ'); if (!el) return; const io = tradeIn(c); if (!io) { el.innerHTML = `<span>quote</span><b>${T.side === 's' ? 'nothing to sell' : '—'}</b>`; $('#tGo').disabled = true; return; }
+  const my = ++qSeq; el.innerHTML = '<span>quote</span><b>finding the best route…</b>';
+  try { const q = await fetch(`https://lite-api.jup.ag/swap/v1/quote?inputMint=${io.inM}&outputMint=${io.outM}&amount=${io.amount}&slippageBps=${T.slip}&restrictIntermediateTokens=true`).then(r => r.json()); if (my !== qSeq) return; if (q.error || !q.outAmount) throw new Error(q.error || 'no route');
+    T.q = q; const buy = T.side === 'b', out = buy ? Number(q.outAmount) / 10 ** (c.dec ?? held(c.mint)?.dec ?? 6) : Number(q.outAmount) / 1e9, min = buy ? Number(q.otherAmountThreshold) / 10 ** (c.dec ?? held(c.mint)?.dec ?? 6) : Number(q.otherAmountThreshold) / 1e9;
+    const imp = (+q.priceImpactPct || 0) * 100;
+    el.innerHTML = `<span>you get ≈</span><b>${buy ? out.toLocaleString(undefined, { maximumFractionDigits: 0 }) + ' $' + esc(c.symbol) : out.toFixed(4) + ' SOL'}</b><span>minimum</span><b>${buy ? min.toLocaleString(undefined, { maximumFractionDigits: 0 }) : min.toFixed(4) + ' SOL'}</b><span>price impact</span><b class="${imp > 5 ? 'dn' : imp > 1 ? '' : 'up'}">${imp.toFixed(2)}%</b><span>route</span><b>${esc((q.routePlan || []).map(x => x.swapInfo.label).join(' › ') || '—')}</b>`;
+    $('#tGo').disabled = false; } catch (e) { if (my !== qSeq) return; T.q = null; el.innerHTML = `<span>quote</span><b class="dn">${esc(e.message)}</b>`; $('#tGo').disabled = true; } }
+function loadWeb3() { return window.solanaWeb3 ? Promise.resolve() : new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = '/assets/web3.min.js'; sc.onload = res; sc.onerror = () => rej(new Error('could not load web3')); document.head.appendChild(sc); }); }
+async function swap(c) { if (T.busy) return; if (!T.q) return toast('no quote yet', 1); const btn = $('#tGo'); T.busy = true; btn.disabled = true; const label = btn.textContent;
+  try { btn.textContent = 'building…'; await loadWeb3();
+    const r = await fetch('https://lite-api.jup.ag/swap/v1/swap', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ quoteResponse: T.q, userPublicKey: S.wallet, dynamicComputeUnitLimit: true, dynamicSlippage: false, prioritizationFeeLamports: { priorityLevelWithMaxLamports: { maxLamports: 500000, priorityLevel: 'high' } } }) }).then(r => r.json());
+    if (!r.swapTransaction) throw new Error(r.error || 'could not build the swap');
+    const tx = solanaWeb3.VersionedTransaction.deserialize(Uint8Array.from(atob(r.swapTransaction), ch => ch.charCodeAt(0)));
+    btn.textContent = 'check your wallet…'; if (!S.prov?.signAndSendTransaction) throw new Error('this wallet cannot send transactions');
+    const res = await S.prov.signAndSendTransaction(tx); const sig = typeof res === 'string' ? res : res?.signature; if (!sig) throw new Error('no signature');
+    btn.textContent = 'confirming…'; toast('sent · confirming on Solana');
+    let ok = false; for (let i = 0; i < 40 && !ok; i++) { await new Promise(z => setTimeout(z, 1500)); const st = await api('/api/rpc', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ method: 'getSignatureStatuses', params: [[sig], { searchTransactionHistory: true }] }) }).catch(() => null);
+      const v = st?.result?.value?.[0]; if (v?.err) throw new Error('transaction failed on-chain'); if (v && (v.confirmationStatus === 'confirmed' || v.confirmationStatus === 'finalized')) ok = true; }
+    if (!ok) { toast('not confirmed yet · check solscan', 1); window.open('https://solscan.io/tx/' + sig, '_blank', 'noopener'); }
+    else { const m = $('#mp'); $('.mp1', m).textContent = T.side === 'b' ? 'BOUGHT!' : 'SOLD!'; $('#mpT').textContent = `$${c.symbol} · ${T.side === 'b' ? T.amt + ' SOL in' : T.pct + '% out'}`; $('.mp3', m).innerHTML = `<a href="https://solscan.io/tx/${sig}" target="_blank" rel="noopener" style="pointer-events:auto">view on solscan ↗</a>`; m.classList.remove('on'); void m.offsetWidth; m.classList.add('on'); setTimeout(() => { m.classList.remove('on'); $('.mp1', m).textContent = 'CALL PLACED!'; $('.mp3', m).textContent = 'RESPECT +1'; }, 3200); }
+    setTimeout(loadBag, 2500); }
+  catch (e) { toast(e.message || 'cancelled', 1); }
+  finally { T.busy = false; if ($('#tGo')) { $('#tGo').disabled = false; $('#tGo').textContent = label; } } }
+
+// ---------------------------------------------------------------- price alerts (this browser)
+S.alerts = (() => { try { return JSON.parse(store.get('betz:al') || '{}'); } catch (_) { return {}; } })();
+function alertOf(m) { return S.alerts[m]; }
+function alertModal(c) { const a = alertOf(c.mint) || {}; $('#alBox').innerHTML = `<label>alert when $${esc(c.symbol)} mcap goes above <span>$</span><input id="alUp" type="number" min="0" value="${a.up || Math.round(c.mcap * 1.5)}"></label><label>or drops below <span>$</span><input id="alDn" type="number" min="0" value="${a.dn || Math.round(c.mcap * .7)}"></label><div class="when">now: ${money(c.mcap)}</div>`;
+  $('#alSet').onclick = () => { S.alerts[c.mint] = { up: +$('#alUp').value || 0, dn: +$('#alDn').value || 0, sym: c.symbol }; store.set('betz:al', JSON.stringify(S.alerts)); closeModals(); toast('alert set on $' + c.symbol); try { Notification?.requestPermission?.(); } catch (_) {} renderDet(); };
+  $('#alClr').onclick = () => { delete S.alerts[c.mint]; store.set('betz:al', JSON.stringify(S.alerts)); closeModals(); toast('alert cleared'); renderDet(); }; $('#mAl').classList.add('on'); }
+function checkAlerts() { for (const [m, a] of Object.entries(S.alerts)) { const c = S.byMint[m]; if (!c) continue; let hit = null; if (a.up && c.mcap >= a.up) hit = `$${c.symbol} broke ${money(a.up)} (now ${money(c.mcap)})`; if (a.dn && c.mcap <= a.dn) hit = `$${c.symbol} fell under ${money(a.dn)} (now ${money(c.mcap)})`;
+  if (hit) { toast('🔔 ' + hit); try { if (Notification.permission === 'granted') new Notification('Betz alert', { body: hit, icon: '/assets/mark.svg' }); } catch (_) {} delete S.alerts[m]; store.set('betz:al', JSON.stringify(S.alerts)); } } }
 
 // ---------------------------------------------------------------- ⌘K palette
 let palSel = 0, palItems = [];
@@ -332,11 +397,11 @@ $$('[data-x]').forEach(b => b.onclick = closeModals); $$('.modal').forEach(m => 
 function connect() { return new Promise(res => { const L = wallets(); const box = $('#wList');
   box.innerHTML = L.length ? L.map((w, i) => `<button class="wopt" data-i="${i}">${w.name}<span>detected</span></button>`).join('') : `<div class="mnote">No Solana wallet found in this browser. Install <a href="https://phantom.app" target="_blank" rel="noopener"><u>Phantom</u></a>, <a href="https://solflare.com" target="_blank" rel="noopener"><u>Solflare</u></a> or <a href="https://backpack.app" target="_blank" rel="noopener"><u>Backpack</u></a>, or open betz in your wallet's browser.</div>`;
   $$('.wopt', box).forEach(b => b.onclick = async () => { const w = L[+b.dataset.i]; try { const r = await w.p.connect(); const pk = (r?.publicKey || w.p.publicKey)?.toString(); if (!pk) throw new Error('no public key');
-    S.wallet = pk; S.prov = w.p; store.set('betz:w', w.id); closeModals(); walletUI(); loadBoard(); toast('connected ' + short(pk)); res(true); } catch (e) { toast(e.message || 'connection cancelled', 1); res(false); } });
+    S.wallet = pk; S.prov = w.p; store.set('betz:w', w.id); closeModals(); walletUI(); loadBoard(); loadBag(); toast('connected ' + short(pk)); res(true); } catch (e) { toast(e.message || 'connection cancelled', 1); res(false); } });
   $('#mWal').classList.add('on'); }); }
-async function disconnect() { try { await S.prov?.disconnect?.(); } catch (_) {} S.wallet = null; S.prov = null; store.set('betz:w', ''); walletUI(); loadBoard(); toast('disconnected'); }
+async function disconnect() { try { await S.prov?.disconnect?.(); } catch (_) {} S.wallet = null; S.prov = null; S.bag = null; store.set('betz:w', ''); walletUI(); loadBoard(); const c0 = S.byMint[S.sel]; if (c0) { tradeUI(c0); posUI(c0); } toast('disconnected'); }
 function walletUI() { const on = !!S.wallet; $('#wal').classList.toggle('on', on); $('#hconn').classList.toggle('on', on); $('#walT').textContent = on ? short(S.wallet) : 'connect'; $('#hconn span').textContent = on ? short(S.wallet) : 'connect wallet'; }
-(async () => { const id = store.get('betz:w'); if (!id) return; await new Promise(r => setTimeout(r, 500)); const w = wallets().find(x => x.id === id); if (!w) return; try { const r = await w.p.connect({ onlyIfTrusted: true }); const pk = (r?.publicKey || w.p.publicKey)?.toString(); if (pk) { S.wallet = pk; S.prov = w.p; walletUI(); loadBoard(); } } catch (_) {} })();
+(async () => { const id = store.get('betz:w'); if (!id) return; await new Promise(r => setTimeout(r, 500)); const w = wallets().find(x => x.id === id); if (!w) return; try { const r = await w.p.connect({ onlyIfTrusted: true }); const pk = (r?.publicKey || w.p.publicKey)?.toString(); if (pk) { S.wallet = pk; S.prov = w.p; walletUI(); loadBoard(); loadBag(); } } catch (_) {} })();
 
 // ---------------------------------------------------------------- the bet slip: sign a message, store the call
 const msgOf = b => `betz call\ncoin: ${b.mint}\nmarket: ${b.mkt}\nside: ${b.side === 'Y' ? 'YES' : 'NO'}\ntime: ${b.ts}`;
@@ -360,5 +425,5 @@ function share(c, k, side) { const cv = $('#card'), g = cv.getContext('2d'), W =
 // ---------------------------------------------------------------- go
 loadCoins(); loadBoard(); loadPM(); loadNews(); setInterval(loadNews, 600000);
 setInterval(loadCoins, 30000); setInterval(loadBoard, 15000); setInterval(loadPM, 120000);
-setInterval(() => { if (S.tab === 'mine') renderMine(); }, 30000);
-addEventListener('resize', () => { if (S.tab === 'markets' && S.sel) drawChart(S.sel); if (S.tab === 'map') renderMap(); if (S.tab === 'city') renderCity(); });
+setInterval(() => { if (S.tab === 'mine') renderMine(); }, 30000); setInterval(() => { if (S.wallet) loadBag(); }, 45000);
+addEventListener('resize', () => { if (S.tab === 'markets' && S.sel) drawChart(S.sel); if (S.tab === 'map') renderMap(); });

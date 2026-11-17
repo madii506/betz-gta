@@ -42,7 +42,7 @@ const envTex = canvasTex(1024, 512, (g, w, h) => { const gr = g.createLinearGrad
   g.fillStyle = '#fff0cf'; g.beginPath(); g.ellipse(w * .25, h * .49, 70, 26, 0, 0, 7); g.fill(); for (let i = 0; i < 40; i++) { g.fillStyle = ['#ff4fa6', '#19d3c5', '#ffd36b'][i % 3]; g.fillRect(w * (.55 + hsh(i, 1) * .4), h * (.42 + hsh(i, 2) * .08), 6, 3); } });
 envTex.mapping = THREE.EquirectangularReflectionMapping;
 const pm = new THREE.PMREMGenerator(R); scene.environment = pm.fromEquirectangular(envTex).texture; scene.environmentIntensity = .9;
-scene.background = new THREE.Color(0x24163f); scene.fog = new THREE.Fog(0x4a2a5c, 55, 190);
+scene.background = new THREE.Color(0x24163f); scene.fog = new THREE.Fog(0x4a2a5c, 70, 260);
 // sky dome with a setting sun over the water (the sea is on +x)
 const skyTex = canvasTex(1024, 1024, (g, w, h) => { const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#120c34'); gr.addColorStop(.3, '#3c1f66'); gr.addColorStop(.43, '#9a3f8a'); gr.addColorStop(.48, '#ff7466'); gr.addColorStop(.5, '#ffb070'); gr.addColorStop(.52, '#3a2048'); gr.addColorStop(1, '#120a18'); g.fillStyle = gr; g.fillRect(0, 0, w, h);
   for (let i = 0; i < 160; i++) { g.fillStyle = `rgba(255,255,255,${.2 + hsh(i, 5) * .6})`; g.fillRect(hsh(i, 6) * w, hsh(i, 7) * h * .3, 1.5, 1.5); }
@@ -99,8 +99,41 @@ function buildSeg(i) { const g = new THREE.Group(); scene.add(g); const s = 100 
   mesh(new THREE.BoxGeometry(.5, .14, .26), neonMat(0xfff0c8), -1.25, 5.85, 0, lamp, false); glow(0xffd9a0, 1.6, -1.25, 5.7, 0, lamp, .7);
   // a lamp on the hotel side too
   const l2 = lamp.clone(); l2.position.set(-7.4, 0, -2); l2.rotation.y = Math.PI; g.add(l2); l2.traverse(o => { if (o.isSprite) o.layers.set(1); });
+  // the beach: umbrellas, towels, a lifeguard tower now and then
+  for (let u = 0; u < 2; u++) { const ux = 9 + hsh(s, 20 + u) * 9, uz = -4 + u * 6 + hsh(s, 22 + u) * 2, uc = [0xff4fa6, 0x19d3c5, 0xffd36b, 0xffffff, 0xb06bff][(i + u) % 5];
+    mesh(new THREE.CylinderGeometry(.04, .04, 2.2, 6), toon(0xf6f0ea), ux, 1.1, uz, g); const um = mesh(new THREE.ConeGeometry(1.3, .55, 12, 1, true), toon(uc, { side: THREE.DoubleSide }), ux, 2.2, uz, g); um.rotation.z = (hsh(s, 24 + u) - .5) * .3;
+    const tw = mesh(new THREE.PlaneGeometry(.9, 1.8), toon([0xffd36b, 0x19d3c5, 0xff7ab8][(i + u) % 3]), ux + 1.3, .04, uz + .4, g, false); tw.rotation.x = -Math.PI / 2; tw.rotation.z = hsh(s, 26) * 1.5; }
+  if (i % 4 === 0) { const lt = new THREE.Group(); lt.position.set(17, 0, 2); g.add(lt); [-1, 1].forEach(a => [-1, 1].forEach(b => mesh(new THREE.BoxGeometry(.1, 2.2, .1), toon(0xf6f0ea), a * .7, 1.1, b * .7, lt)));
+    mesh(new THREE.BoxGeometry(1.9, 1.2, 1.9), toon(0x8fd8f0), 0, 2.8, 0, lt); mesh(new THREE.ConeGeometry(1.6, .7, 4), toon(0xff5a6a), 0, 3.75, 0, lt).rotation.y = Math.PI / 4; mesh(new THREE.BoxGeometry(.9, .5, .02), toon(0xff5a6a), .96, 2.9, 0, lt).rotation.y = Math.PI / 2; }
   g.position.z = ZMIN + i * SEG; segs.push(g); }
 for (let i = 0; i < NSEG; i++) buildSeg(i);
+// ---------------------------------------------------------------- the skyline behind the hotels: deco towers, spires, neon crowns
+const TSPAN = 280, towers = []; const towerTex = [0, 1, 2, 3, 4, 5].map(k => { const t = facadeTex(500 + k, 30); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1, 3); return t; });
+for (let i = 0; i < 34; i++) { const g = new THREE.Group(); scene.add(g); const s = 900 + i, h = 16 + hsh(s, 1) * 46, w = 6 + hsh(s, 2) * 6, dpt = 6 + hsh(s, 3) * 6, col = [0xe8b4d8, 0xb8d4f0, 0xf0d0b0, 0xd0c0f0, 0xf6e6f0, 0xa8e0d8][i % 6];
+  const x = -26 - hsh(s, 4) * 46; mesh(new THREE.BoxGeometry(dpt, h, w), toon(col, { map: towerTex[i % 6] }), 0, h / 2, 0, g, false);
+  mesh(new THREE.BoxGeometry(dpt * .7, h * .14, w * .7), toon(col), 0, h + h * .07, 0, g, false);
+  if (hsh(s, 5) > .5) { mesh(new THREE.ConeGeometry(Math.min(w, dpt) * .25, h * .35, 4), toon(0xfff3ea), 0, h * 1.14 + h * .175, 0, g, false); glow(0xff3048, 2.2, 0, h * 1.33, 0, g, .9); }
+  const nc = NEON[i % 4]; mesh(new THREE.BoxGeometry(dpt + .1, .25, w + .1), neonMat(nc), 0, h - .4, 0, g, false); glow(nc, 10, dpt / 2 + 1, h - .4, 0, g, .35);
+  g.position.set(x, 0, ZMIN + (i / 34) * TSPAN + hsh(s, 6) * 6); towers.push(g); }
+// ---------------------------------------------------------------- boats on the water
+const boats = [];
+for (let i = 0; i < 5; i++) { const g = new THREE.Group(); scene.add(g); const sc = .9 + hsh(i, 61) * 1.4; g.scale.setScalar(sc);
+  const hull = new THREE.BoxGeometry(2.2, .8, 7); const hp = hull.attributes.position; for (let k = 0; k < hp.count; k++) { if (hp.getZ(k) > 0) hp.setX(k, hp.getX(k) * (1 - hp.getZ(k) / 3.6 * .85)); if (hp.getY(k) < 0) hp.setX(k, hp.getX(k) * .7); } hull.computeVertexNormals();
+  mesh(hull, toon(0xfaf6f2), 0, .3, 0, g); mesh(new THREE.BoxGeometry(1.5, .7, 2.6), toon(i % 2 ? 0x19d3c5 : 0xff4fa6), 0, 1.05, -.8, g); mesh(new THREE.BoxGeometry(1.4, .3, 1.8), new THREE.MeshStandardMaterial({ color: 0x1a1428, metalness: .8, roughness: .1 }), 0, 1.25, -.5, g);
+  const wk = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 14), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .35, depthWrite: false })); wk.rotation.x = -Math.PI / 2; wk.position.set(0, .03, -10); wk.layers.set(1); g.add(wk);
+  glow(0xffffff, 1.2, 0, 1.8, 3, g, .9); glow(0xff3048, .9, -1, .9, -3.4, g, .8);
+  g.position.set(34 + i * 18 + hsh(i, 62) * 8, 0, ZMIN + i * 56); g.userData.v = 4 + hsh(i, 63) * 6; boats.push(g); }
+// ---------------------------------------------------------------- a news chopper circling with its searchlight
+const heli = new THREE.Group(); scene.add(heli); const HB = toon(0x2a2234), HW = toon(0xfff6f2);
+{ const b = mesh(new THREE.SphereGeometry(1, 18, 12), HW, 0, 0, 0, heli); b.scale.set(1, .9, 1.6); mesh(new THREE.SphereGeometry(.7, 14, 10), new THREE.MeshStandardMaterial({ color: 0x1a1428, metalness: .8, roughness: .1 }), 0, .15, .9, heli).scale.set(1, .8, 1);
+  mesh(new THREE.CylinderGeometry(.12, .25, 4, 8), HW, 0, .2, -2.8, heli).rotation.x = Math.PI / 2; mesh(new THREE.BoxGeometry(.08, 1, .6), HB, 0, .7, -4.6, heli);
+  [-1, 1].forEach(k => { mesh(new THREE.BoxGeometry(.08, .08, 2.6), HB, k * .8, -1.1, 0, heli); mesh(new THREE.BoxGeometry(.06, .5, .06), HB, k * .8, -.85, .6, heli); mesh(new THREE.BoxGeometry(.06, .5, .06), HB, k * .8, -.85, -.6, heli); });
+  const st = mesh(new THREE.BoxGeometry(.6, 1, .25), toon(0xff4fa6), 0, .2, 0, heli); st.position.set(1.02, .1, -.2); }
+const rotor = new THREE.Group(); rotor.position.y = 1.05; heli.add(rotor); [0, 1].forEach(k => mesh(new THREE.BoxGeometry(9, .04, .3), HB, 0, 0, 0, rotor).rotation.y = k * Math.PI / 2);
+const tailR = new THREE.Group(); tailR.position.set(.12, .7, -4.6); heli.add(tailR); [0, 1].forEach(k => mesh(new THREE.BoxGeometry(.03, 1.4, .12), HB, 0, 0, 0, tailR).rotation.x = k * Math.PI / 2);
+const heliBlink = glow(0xff3048, 1.4, 0, -.9, -1, heli, 1);
+const searchCone = new THREE.Mesh(new THREE.ConeGeometry(4, 22, 32, 1, true), new THREE.MeshBasicMaterial({ color: 0xfff4d8, transparent: true, opacity: .07, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false }));
+searchCone.geometry.translate(0, -11, 0); searchCone.layers.set(1); scene.add(searchCone);
 // ---------------------------------------------------------------- oncoming traffic
 const traffic = []; const TC = [0xffffff, 0xff5a6a, 0x2a2a3a, 0xffd36b, 0x8fd8f0];
 for (let i = 0; i < 4; i++) { const g = new THREE.Group(); scene.add(g); const c = toon(TC[i % TC.length]);
@@ -226,14 +259,17 @@ addEventListener('resize', size); size();
 // ================================================================ the cinematography: four tracking shots that breathe into each other
 const P = innerWidth / innerHeight < .9;
 const SHOTS = P ? [
-  { p: [4.2, 1.2, 12.5], t: [-.2, 2.6, 0], f: 44 }, { p: [9.0, .9, .6], t: [-.6, 2.7, .3], f: 46 }, { p: [-1.2, 3.6, -11], t: [.2, 2.0, 6], f: 46 }, { p: [1.4, .55, 14], t: [-.2, 2.8, -2], f: 42 }] : [
-  { p: [3.3, .85, 7.4], t: [-.15, 2.0, 0], f: 36 }, { p: [6.8, .7, .6], t: [-1.2, 2.0, .4], f: 36 }, { p: [-1.0, 3.1, -8.8], t: [.3, 1.75, 5], f: 38 }, { p: [1.1, .45, 9.6], t: [-.4, 2.15, -2], f: 34 }];
+  { p: [4.2, 1.2, 12.5], t: [-.2, 2.6, 0], f: 44 }, { p: [20, 14, 30], t: [-5, 2, 2], f: 52, m: [-2, 2, -4] }, { orbit: 1, r: 13, h: 4.2, a0: .6, a1: 2.4, t: [0, 2.4, 0], f: 48 },
+  { p: [-2, 10, -20], t: [0, 2, 30], f: 50, m: [0, 2, 3] }, { p: [10, 40, -4], t: [-4, 0, 18], f: 52, m: [0, 4, 6] }, { p: [1.4, .55, 14], t: [-.2, 2.8, -2], f: 42 }] : [
+  { p: [3.3, .85, 7.4], t: [-.15, 2.0, 0], f: 36 }, { p: [16, 10, 21], t: [-5, 1.6, 1], f: 40, m: [-3, 2, -5] }, { orbit: 1, r: 9.5, h: 3.2, a0: .55, a1: 2.5, t: [0, 1.9, 0], f: 38 },
+  { p: [6.8, .7, .6], t: [-1.2, 2.0, .4], f: 36 }, { p: [-2.2, 7, -15], t: [0, 2.2, 28], f: 42, m: [0, 1.5, 3] }, { p: [9, 30, -8], t: [-4, 0, 16], f: 46, m: [0, 4, 5] }, { p: [1.1, .45, 9.6], t: [-.4, 2.15, -2], f: 34 }];
 const sm = x => x * x * x * (x * (x * 6 - 15) + 10); const V = a => new THREE.Vector3(...a);
-const SHOT = 8.5, BLEND = 3; let mode = 'home', dimV = 0, hopT = 4, mx = 0, my = 0;
+const SHOT = 7.5, BLEND = 2.6; let mode = 'home', dimV = 0, hopT = 4, mx = 0, my = 0;
 addEventListener('pointermove', e => { mx = e.clientX / innerWidth - .5; my = e.clientY / innerHeight - .5; });
-function camAt(t) { const n = SHOTS.length, i = Math.floor(t / SHOT) % n, f = (t % SHOT) / SHOT, a = SHOTS[i], b = SHOTS[(i + 1) % n];
-  const drift = f * .5; const pa = V(a.p).add(new THREE.Vector3(-drift * .4, drift * .12, drift * .3)), ta = V(a.t);
-  const k = sm(Math.max(0, (t % SHOT - (SHOT - BLEND)) / BLEND)); cam.position.lerpVectors(pa, V(b.p), k); const tt = new THREE.Vector3().lerpVectors(ta, V(b.t), k); cam.fov = a.f + (b.f - a.f) * k;
+function shotAt(s, f) { if (s.orbit) { const a = s.a0 + (s.a1 - s.a0) * f; return { p: new THREE.Vector3(Math.sin(a) * s.r, s.h + Math.sin(f * Math.PI) * .8, Math.cos(a) * s.r), t: V(s.t), f: s.f }; }
+  const m = s.m || [-.2, .06, .15]; return { p: V(s.p).add(new THREE.Vector3(m[0] * f, m[1] * f, m[2] * f)), t: V(s.t), f: s.f }; }
+function camAt(t) { const n = SHOTS.length, i = Math.floor(t / SHOT) % n, f = (t % SHOT) / SHOT, A = shotAt(SHOTS[i], f), B = shotAt(SHOTS[(i + 1) % n], 0);
+  const k = sm(Math.max(0, (t % SHOT - (SHOT - BLEND)) / BLEND)); cam.position.lerpVectors(A.p, B.p, k); const tt = new THREE.Vector3().lerpVectors(A.t, B.t, k); cam.fov = A.f + (B.f - A.f) * k;
   cam.position.x += mx * .35 + Math.sin(t * 2.3) * .015; cam.position.y += -my * .18 + Math.sin(t * 3.1) * .012; cam.lookAt(tt); cam.updateProjectionMatrix(); }
 // ================================================================ the GTA radar (bottom left), drawn from the live world
 const radar = document.getElementById('radar'); const rg = radar ? radar.getContext('2d') : null;
@@ -243,18 +279,25 @@ function drawRadar(speed, dt) { if (!rg) return; const S = radar.width, c = S / 
   rg.fillStyle = 'rgba(240,200,170,.35)'; rg.fillRect(c + 2.6 * k, 0, 3.4 * k, S); rg.fillStyle = 'rgba(120,100,130,.9)'; rg.fillRect(c - 7 * k, 0, 9.5 * k, S);
   rg.fillStyle = 'rgba(255,207,74,.9)'; rg.fillRect(c - 2.3 * k, 0, 2, S);
   for (const g of segs) { const y = c - g.position.z * k; rg.fillStyle = 'rgba(200,170,220,.55)'; rg.fillRect(c - 22 * k, y - 5.4 * k, 11 * k, 10.8 * k); rg.fillStyle = 'rgba(80,200,120,.8)'; rg.beginPath(); rg.arc(c + 4.9 * k, y, 2.2, 0, 7); rg.fill(); }
+  for (const g of boats) { rg.fillStyle = '#fff6f2'; rg.fillRect(c + g.position.x * k * .6 - 2, c - g.position.z * k - 3, 4, 6); }
+  rg.fillStyle = '#ffc65a'; rg.beginPath(); rg.arc(c + heli.position.x * k * .6, c - heli.position.z * k, 4.5, 0, 7); rg.fill();
   for (const t of traffic) { rg.fillStyle = '#fff'; rg.fillRect(c - 4.5 * k - 2, c - t.g.position.z * k - 4, 4, 8); }
   for (const b of blips) { b.z -= speed * dt; if (b.z < -50) { b.z += 200; b.x = -30 + Math.random() * 60; } const y = c - b.z * k, x = c + b.x * k * .6; rg.fillStyle = b.c; rg.beginPath(); rg.arc(x, y, 4, 0, 7); rg.fill(); rg.strokeStyle = 'rgba(0,0,0,.5)'; rg.lineWidth = 1.5; rg.stroke(); }
   rg.restore(); rg.fillStyle = '#fff6f2'; rg.beginPath(); rg.moveTo(c, c - 9); rg.lineTo(c + 6.5, c + 7); rg.lineTo(c, c + 3.5); rg.lineTo(c - 6.5, c + 7); rg.closePath(); rg.fill(); rg.strokeStyle = 'rgba(20,6,18,.9)'; rg.lineWidth = 2; rg.stroke();
   rg.strokeStyle = 'rgba(255,246,242,.75)'; rg.lineWidth = 4; rg.beginPath(); rg.arc(c, c, c - 3, 0, 7); rg.stroke(); }
 // ================================================================ loop
-const clock = new THREE.Clock(); let T = 0, ready = false, frames = 0, slow = 0;
+const clock = new THREE.Clock(); let T = (+(new URLSearchParams(location.search).get('shot')) || 0) * 7.5 + .5, ready = false, frames = 0, slow = 0;
 const SPEED = 13;
 function frame() { requestAnimationFrame(frame); const dt = Math.min(clock.getDelta(), .05); if (document.hidden) return; const ts = mode === 'term' ? .45 : 1; T += dt * ts; const sp = SPEED * ts, d = sp * dt;
   dimV += ((mode === 'term' ? 1 : 0) - dimV) * Math.min(1, dt * 3); post.uniforms.dim.value = dimV * .55; post.uniforms.time.value = T % 10;
   camAt(T + 1);
   // the world rolls past
   for (const g of segs) { g.position.z -= d; if (g.position.z < ZMIN) g.position.z += NSEG * SEG; }
+  for (const g of towers) { g.position.z -= d; if (g.position.z < ZMIN - 10) g.position.z += TSPAN; }
+  for (const g of boats) { g.position.z -= d - g.userData.v * dt * ts; if (g.position.z < ZMIN - 20) g.position.z += 280; if (g.position.z > 220) g.position.z -= 280; g.position.y = Math.sin(T * 1.3 + g.position.x) * .08; g.rotation.z = Math.sin(T * 1.1 + g.position.x) * .03; }
+  { const a = T * .22; heli.position.set(Math.sin(a) * 26 + 2, 17 + Math.sin(T * .5) * 2, Math.cos(a) * 20 + 14); heli.rotation.set(.12, a + Math.PI / 2 + Math.PI, Math.sin(T * .4) * .1);
+    rotor.rotation.y += dt * 30; tailR.rotation.x += dt * 40; heliBlink.material.opacity = (T % 1) < .12 ? 1 : 0;
+    searchCone.position.copy(heli.position).add(new THREE.Vector3(0, -1, 0)); const tgt = new THREE.Vector3(car.position.x, 0, car.position.z + Math.sin(T * .7) * 2); searchCone.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), tgt.sub(searchCone.position).normalize()); }
   for (const t of traffic) { t.g.position.z -= d + t.v * dt * ts; if (t.g.position.z < -60) t.g.position.z += 200 + Math.random() * 60; }
   roadTex.offset.y -= d / 20; seaTex.offset.x += dt * .004; seaTex.offset.y -= d / 140;
   for (const w of wheels) w.rotation.x += d / .34; for (const w of wheelsM) w.rotation.x += d / .34;
