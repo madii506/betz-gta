@@ -5,12 +5,15 @@ const cv = document.getElementById('bg');
 const PHONE = matchMedia('(max-width: 760px)').matches;
 const R = new THREE.WebGLRenderer({ canvas: cv, antialias: false, powerPreference: 'high-performance' });
 let DPR = Math.min(devicePixelRatio || 1, PHONE ? 1.5 : 1.6); R.setPixelRatio(DPR);
-R.shadowMap.enabled = true; R.shadowMap.type = THREE.PCFSoftShadowMap; R.outputColorSpace = THREE.SRGBColorSpace; R.toneMapping = THREE.NoToneMapping;
+R.shadowMap.enabled = true; R.shadowMap.autoUpdate = false; R.shadowMap.type = THREE.PCFSoftShadowMap; R.outputColorSpace = THREE.SRGBColorSpace; R.toneMapping = THREE.NoToneMapping;
 const scene = new THREE.Scene();
 const hsh = (a, b) => { let h = (a * 374761393 + b * 668265263) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
 const canvasTex = (w, h, draw, srgb = true) => { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); if (srgb) t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; };
 const ramp = new THREE.DataTexture(new Uint8Array([70, 70, 70, 255, 150, 150, 150, 255, 255, 255, 255, 255]), 3, 1); ramp.minFilter = ramp.magFilter = THREE.NearestFilter; ramp.needsUpdate = true;
-const toon = (color, o = {}) => new THREE.MeshToonMaterial({ color, gradientMap: ramp, ...o });
+const TOONS = new Map(); const toon = (color, o = {}) => { const plain = !Object.keys(o).length; if (plain && TOONS.has(color)) return TOONS.get(color); const m = new THREE.MeshToonMaterial({ color, gradientMap: ramp, ...o }); if (plain) TOONS.set(color, m); return m; };
+function mergeGeo(list) { const parts = list.map(g => g.index ? g.toNonIndexed() : g); const names = ['position', 'normal', 'uv'].filter(n => parts.every(p => p.attributes[n]));
+  const out = new THREE.BufferGeometry(); for (const n of names) { const size = parts[0].attributes[n].itemSize, len = parts.reduce((a, p) => a + p.attributes[n].array.length, 0), arr = new Float32Array(len); let o = 0; for (const p of parts) { arr.set(p.attributes[n].array, o); o += p.attributes[n].array.length; } out.setAttribute(n, new THREE.BufferAttribute(arr, size)); }
+  return out; }
 const mesh = (geo, mat, x = 0, y = 0, z = 0, parent = scene, shadow = true) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = shadow; m.receiveShadow = true; parent.add(m); return m; };
 await Promise.all([document.fonts.load('900 40px RB'), document.fonts.load('800 20px JB'), document.fonts.load('700 20px JB')]).catch(() => {});
 const frondTex = canvasTex(1024, 256, (g, w, h) => { g.clearRect(0, 0, w, h); g.fillStyle = '#fff';
@@ -26,12 +29,12 @@ function palm(x, z, hgt, lean, seed, parent = scene) { const grp = new THREE.Gro
   const top = new THREE.Vector3(lean, hgt, lean * .2);
   const curve = new THREE.CatmullRomCurve3([new THREE.Vector3(0, 0, 0), new THREE.Vector3(lean * .15, hgt * .35, 0), new THREE.Vector3(lean * .55, hgt * .72, lean * .1), top]);
   const tr = mesh(new THREE.TubeGeometry(curve, 40, .16, 10, false), toon(0xffffff, { map: barkTex }), 0, 0, 0, grp);
-  for (let i = 0; i < 18; i++) { const L = 2.4 + hsh(seed, i) * 1.1, geo = new THREE.PlaneGeometry(L, 1.0, 20, 2); geo.translate(L / 2, 0, 0); const p = geo.attributes.position;
+  const crownG = []; for (let i = 0; i < 18; i++) { const L = 2.4 + hsh(seed, i) * 1.1, geo = new THREE.PlaneGeometry(L, 1.0, 20, 2); geo.translate(L / 2, 0, 0); const p = geo.attributes.position;
     const droop = .38 + hsh(seed, i + 50) * .3; for (let k = 0; k < p.count; k++) { const u = p.getX(k) / L; p.setY(k, p.getY(k) * .0 - droop * L * u * u + .25 * L * u); p.setZ(k, (k % 2 ? 1 : -1) * .31 * Math.sin(Math.PI * Math.min(1, u * 1.05)) * .6); }
     // put the leaf width in the plane of the frond: rebuild y/z so the blade lies flat
     geo.computeVertexNormals();
-    const f = new THREE.Mesh(geo, frondMat); f.customDepthMaterial = frondDepth; f.castShadow = true; f.receiveShadow = true;
-    f.position.copy(top); f.rotation.y = i / 18 * Math.PI * 2 + hsh(seed, i + 9) * .3; f.rotation.z = (hsh(seed, i + 20) - .5) * .3; grp.add(f); }
+    geo.applyMatrix4(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(0, i / 18 * Math.PI * 2 + hsh(seed, i + 9) * .3, (hsh(seed, i + 20) - .5) * .3))); crownG.push(geo); }
+  const f = new THREE.Mesh(mergeGeo(crownG), frondMat); f.customDepthMaterial = frondDepth; f.castShadow = true; f.receiveShadow = true; f.position.copy(top); grp.add(f);
   mesh(new THREE.SphereGeometry(.22, 12, 10), toon(0x6b5a3a), top.x, top.y - .05, top.z, grp);
   return grp; }
 
@@ -178,8 +181,9 @@ function wheel(x, z) { const g = new THREE.Group(); g.name = 'wheel'; g.position
   mesh(new THREE.CylinderGeometry(.34, .34, .22, 32), RUB, 0, 0, 0, g).rotation.z = Math.PI / 2;
   const ww = mesh(new THREE.TorusGeometry(.28, .035, 8, 40), WHITE, s * .112, 0, 0, g); ww.rotation.y = Math.PI / 2;
   const rim = mesh(new THREE.TorusGeometry(.225, .025, 8, 40), GOLD, s * .11, 0, 0, g); rim.rotation.y = Math.PI / 2;
-  for (let i = 0; i < 48; i++) { const a = i / 48 * Math.PI * 2, b = a + (i % 2 ? .45 : -.45), sp = new THREE.Vector3(s * .12, Math.sin(b) * .05, Math.cos(b) * .05), ep = new THREE.Vector3(s * .1, Math.sin(a) * .22, Math.cos(a) * .22);
-    const d = ep.clone().sub(sp), m = mesh(new THREE.CylinderGeometry(.006, .006, d.length(), 4), GOLD, 0, 0, 0, g, false); m.position.copy(sp).add(ep).multiplyScalar(.5); m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()); }
+  const spk = []; for (let i = 0; i < 48; i++) { const a = i / 48 * Math.PI * 2, b = a + (i % 2 ? .45 : -.45), sp = new THREE.Vector3(s * .12, Math.sin(b) * .05, Math.cos(b) * .05), ep = new THREE.Vector3(s * .1, Math.sin(a) * .22, Math.cos(a) * .22);
+    const d = ep.clone().sub(sp), cg = new THREE.CylinderGeometry(.006, .006, d.length(), 4); const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.clone().normalize()); cg.applyMatrix4(new THREE.Matrix4().compose(sp.clone().add(ep).multiplyScalar(.5), q, new THREE.Vector3(1, 1, 1))); spk.push(cg); }
+  mesh(mergeGeo(spk), GOLD, 0, 0, 0, g, false);
   mesh(new THREE.CylinderGeometry(.06, .07, .05, 16), GOLD, s * .13, 0, 0, g).rotation.z = Math.PI / 2;
   for (let k = 0; k < 2; k++) { const e = mesh(new THREE.BoxGeometry(.02, .16, .03), GOLD, s * .16, 0, 0, g, false); e.rotation.x = k * Math.PI / 2 + .3; } }
 [[.92, WZ], [-.92, WZ], [.92, -WZ], [-.92, -WZ]].forEach(([x, z]) => wheel(x, z));
@@ -264,11 +268,14 @@ const SHOTS = P ? [
   { p: [3.3, .85, 7.4], t: [-.15, 2.0, 0], f: 36 }, { p: [16, 10, 21], t: [-5, 1.6, 1], f: 40, m: [-3, 2, -5] }, { orbit: 1, r: 9.5, h: 3.2, a0: .55, a1: 2.5, t: [0, 1.9, 0], f: 38 },
   { p: [6.8, .7, .6], t: [-1.2, 2.0, .4], f: 36 }, { p: [-2.2, 7, -15], t: [0, 2.2, 28], f: 42, m: [0, 1.5, 3] }, { p: [9, 30, -8], t: [-4, 0, 16], f: 46, m: [0, 4, 5] }, { p: [1.1, .45, 9.6], t: [-.4, 2.15, -2], f: 34 }];
 const sm = x => x * x * x * (x * (x * 6 - 15) + 10); const V = a => new THREE.Vector3(...a);
-const SHOT = 7.5, BLEND = 2.6; let mode = 'home', tsV = 1, dimV = 0, hopT = 4, mx = 0, my = 0;
+const QPS = new URLSearchParams(location.search); if (QPS.get('seq')) { const o = QPS.get('seq').split(',').map(Number).map(i => SHOTS[i]).filter(Boolean); SHOTS.splice(0, SHOTS.length, ...o); }
+const SHOT = +QPS.get('len') || 7.5, BLEND = Math.min(2.6, SHOT * .38); let mode = 'home', tsV = 1, dimV = 0, hopT = 4, mx = 0, my = 0;
 addEventListener('pointermove', e => { mx = e.clientX / innerWidth - .5; my = e.clientY / innerHeight - .5; });
 function shotAt(s, f) { if (s.orbit) { const a = s.a0 + (s.a1 - s.a0) * f; return { p: new THREE.Vector3(Math.sin(a) * s.r, s.h + Math.sin(f * Math.PI) * .8, Math.cos(a) * s.r), t: V(s.t), f: s.f }; }
   const m = s.m || [-.2, .06, .15]; return { p: V(s.p).add(new THREE.Vector3(m[0] * f, m[1] * f, m[2] * f)), t: V(s.t), f: s.f }; }
-function camAt(t) { const n = SHOTS.length, i = Math.floor(t / SHOT) % n, f = (t % SHOT) / SHOT, A = shotAt(SHOTS[i], f), B = shotAt(SHOTS[(i + 1) % n], 0);
+const QP = new URLSearchParams(location.search), CAMQ = (QP.get('cam') || '').split(',').map(Number);
+if (QP.has('notraffic')) setTimeout(() => traffic.forEach(t => t.g.visible = false), 0);
+function camAt(t) { if (CAMQ.length === 7) { cam.position.set(CAMQ[0], CAMQ[1], CAMQ[2]); cam.fov = CAMQ[6]; cam.lookAt(CAMQ[3], CAMQ[4], CAMQ[5]); cam.updateProjectionMatrix(); return; } const n = SHOTS.length, i = Math.floor(t / SHOT) % n, f = (t % SHOT) / SHOT, A = shotAt(SHOTS[i], f), B = shotAt(SHOTS[(i + 1) % n], 0);
   const k = sm(Math.max(0, (t % SHOT - (SHOT - BLEND)) / BLEND)); cam.position.lerpVectors(A.p, B.p, k); const tt = new THREE.Vector3().lerpVectors(A.t, B.t, k); cam.fov = A.f + (B.f - A.f) * k;
   cam.position.x += mx * .35 + Math.sin(t * 2.3) * .015; cam.position.y += -my * .18 + Math.sin(t * 3.1) * .012; cam.lookAt(tt); cam.updateProjectionMatrix(); }
 // ================================================================ the GTA radar (bottom left), drawn from the live world
@@ -305,13 +312,13 @@ function frame() { requestAnimationFrame(frame); const dt = Math.min(clock.getDe
   hopT += dt; if (hopT > 8) hopT = 0; const h = hopT; let y = Math.sin(T * 23) * .006, rx = 0;
   if (h < .45) rx = -.13 * Math.sin(Math.PI * h / .45); else if (h < 1.3) { const u = (h - .45) / .85; y += .3 * Math.sin(Math.PI * u); rx = .04 * Math.sin(Math.PI * 2 * u); } else if (h < 2.2) { const u = (h - 1.3) / .9; y += .06 * Math.sin(Math.PI * u) * (1 - u); }
   body.position.y = y; body.rotation.x = rx; bodyM.position.y = y; bodyM.rotation.x = rx;
-  for (const f of fronds) { f.m.rotation.y = f.ry + Math.sin(T * .9 + f.k) * .06; f.m.rotation.z = f.rz + Math.sin(T * 1.3 + f.k) * .05; }
+  for (const f of fronds) { f.m.rotation.y = f.ry + Math.sin(T * .9 + f.k) * .05; f.m.rotation.z = f.rz + Math.sin(T * 1.3 + f.k) * .035; f.m.rotation.x = Math.sin(T * 1.1 + f.k * 1.7) * .03; }
   for (const f of fly) { f.life += dt; if (f.life < 0) { f.m.visible = false; continue; } if (!f.max || f.life > f.max || f.p.y < -.2) spawn(f);
     f.v.y -= .5 * dt; f.v.multiplyScalar(1 - .5 * dt); f.v.x += Math.sin(T * 2 + f.r.x) * .6 * dt; f.p.addScaledVector(f.v, dt); f.p.z -= d * .9; f.r.addScaledVector(f.w, dt);
     f.m.visible = true; f.m.position.copy(f.p); f.m.rotation.set(f.r.x, f.r.y, f.r.z); }
   // render: colour (all layers), normals+depth (layer 0), then ink
-  cam.layers.enableAll(); scene.overrideMaterial = null; R.setRenderTarget(rtC); R.render(scene, cam);
-  cam.layers.set(0); scene.overrideMaterial = normalMat; const sh = R.shadowMap.autoUpdate; R.shadowMap.autoUpdate = false; R.setRenderTarget(rtN); R.render(scene, cam); R.shadowMap.autoUpdate = sh; scene.overrideMaterial = null;
+  if (frames % 2 === 0) R.shadowMap.needsUpdate = true; cam.layers.enableAll(); scene.overrideMaterial = null; R.setRenderTarget(rtC); R.render(scene, cam);
+  cam.layers.set(0); scene.overrideMaterial = normalMat; R.setRenderTarget(rtN); R.render(scene, cam); scene.overrideMaterial = null;
   R.setRenderTarget(null); R.render(qs, qc);
   frames++; if (!ready && frames > 2) { ready = true; window.dispatchEvent(new Event('betz:scene')); }
   if (dt > .045) slow++; else slow = Math.max(0, slow - 1); if (slow > 40 && DPR > .8) { DPR = Math.max(.75, DPR - .25); R.setPixelRatio(DPR); size(); slow = 0; } }
