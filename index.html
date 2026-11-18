@@ -110,14 +110,6 @@ html.term #term{opacity:1;visibility:visible}
 .tab.on .n{background:rgba(20,6,15,.12)}
 .wal{height:42px;padding:0 16px;display:flex;align-items:center;gap:10px;font-weight:700;font-size:13px;letter-spacing:.1em;text-transform:uppercase;background:rgba(18,5,20,.55);border:1px solid var(--line);border-radius:3px;white-space:nowrap}
 .wal:hover{background:rgba(255,246,242,.12)}
-.ca{height:42px;padding:0 5px 0 14px;display:flex;align-items:center;gap:10px;font-size:12.5px;font-weight:700;letter-spacing:.03em;background:rgba(18,5,20,.55);border:1px solid var(--line);border-radius:3px;white-space:nowrap;color:var(--paper);cursor:pointer;transition:background .2s,border-color .2s}
-.ca:hover{background:rgba(255,79,166,.14);border-color:rgba(255,79,166,.55)}
-.ca .caL{color:var(--pink);letter-spacing:.06em}.ca .caV{color:var(--dim)}
-.ca .caC{height:30px;display:flex;align-items:center;padding:0 10px;border-radius:2px;background:var(--paper);color:var(--ink);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase}
-.ca.ok .caC{background:var(--yes)}
-@media (max-width:1400px){.ca .caL{display:none}}
-@media (max-width:860px){.ca{height:36px;padding:0 4px 0 10px;font-size:11px;gap:7px}.ca .caC{height:26px;padding:0 7px;font-size:9.5px}}
-@media (max-width:420px){.ca .caV{display:none}.ca{padding:0 4px}}
 .wal .dot{width:8px;height:8px;border-radius:50%;background:var(--faint)}
 .wal.on .dot{background:var(--yes);box-shadow:0 0 10px var(--yes)}
 .strip{display:flex;gap:2px;margin:10px max(18px,3vw) 0;overflow-x:auto;scrollbar-width:none}
@@ -466,7 +458,7 @@ html.term .th{animation-delay:.25s}html.term .tick{animation-delay:.32s}html.ter
       <button class="tab" data-t="how">how</button>
       <span class="qk"><span>E</span></span>
     </nav>
-    <div class="thr"><button class="ca mono" id="ca" data-ca="4ben7LYtRfsLKpsy2XPSk8JpZTvigRwUSwL3V8expump" title="copy the $BETZ contract"><span class="caL">$BETZ</span><span class="caV">4ben7L…expump</span><span class="caC">copy</span></button><span class="clk mono" id="clk">--:--:--</span>
+    <div class="thr"><span class="clk mono" id="clk">--:--:--</span>
     <button class="wal" id="wal"><i class="dot"></i><span id="walT">connect</span></button></div>
   </div>
   <div class="tick" id="tick"><div class="trun" id="tickR"><span class="ti">loading the wire…</span></div></div>
@@ -556,8 +548,6 @@ html.term .th{animation-delay:.25s}html.term .tick{animation-delay:.32s}html.ter
 <div class="modal" id="mShare"><div class="mbox"><div class="bh">call locked <span class="sp"></span><button data-x>✕</button></div><canvas id="card" width="1200" height="675"></canvas><div class="mact"><button class="btn o" id="dl">save image</button><a class="btn w" id="tw" target="_blank" rel="noopener">post on X</a></div></div></div>
 <div id="toast"></div>
 
-<script>(()=>{const b=document.getElementById('ca');if(!b)return;b.onclick=async()=>{const v=b.dataset.ca;try{await navigator.clipboard.writeText(v)}catch(e){const t=document.createElement('textarea');t.value=v;document.body.appendChild(t);t.select();try{document.execCommand('copy')}catch(_){}t.remove()}
-b.classList.add('ok');b.querySelector('.caC').textContent='copied';const T=document.getElementById('toast');if(T){T.textContent='$BETZ contract copied';T.className='on';clearTimeout(T._h);T._h=setTimeout(()=>T.className='',2600)}setTimeout(()=>{b.classList.remove('ok');b.querySelector('.caC').textContent='copy'},1800)}})()</script>
 <script type="module" src="/assets/app.js"></script>
 <script type="module" src="/assets/home.js"></script>
 </body>
