@@ -2,12 +2,14 @@
 const JUP = 'https://lite-api.jup.ag/tokens/v2/search?query=';
 const memo = new Map();
 async function cached(key, ms, fn) { const m = memo.get(key); if (m && Date.now() - m.t < ms) return m.v; const v = await fn(); memo.set(key, { t: Date.now(), v }); return v; }
-async function getJSON(url, opt = {}) { const c = new AbortController(); const t = setTimeout(() => c.abort(), opt.timeout || 9000);
-  try { const r = await fetch(url, { ...opt, signal: c.signal, headers: { accept: 'application/json', 'user-agent': 'betz/1.0', ...(opt.headers || {}) } }); if (!r.ok) throw new Error(url.split('?')[0] + ' ' + r.status); return await r.json(); } finally { clearTimeout(t); } }
+async function getJSON(url, opt = {}, tries = 2) { const c = new AbortController(); const t = setTimeout(() => c.abort(), opt.timeout || 9000);
+  try { const r = await fetch(url, { ...opt, signal: c.signal, headers: { accept: 'application/json', 'user-agent': 'betz/1.0', ...(opt.headers || {}) } });
+    if (r.status === 429 && tries > 1) { clearTimeout(t); await new Promise(z => setTimeout(z, 1300)); return getJSON(url, opt, tries - 1); }
+    if (!r.ok) throw new Error(url.split('?')[0] + ' ' + r.status); return await r.json(); } finally { clearTimeout(t); } }
 function send(res, code, body, maxAge = 0) { res.statusCode = code; res.setHeader('content-type', 'application/json'); res.setHeader('cache-control', maxAge ? `public, s-maxage=${maxAge}, stale-while-revalidate=${maxAge * 4}` : 'no-store'); res.end(JSON.stringify(body)); }
 const QUERIES = ['gta', 'gta6', 'gta vi', 'gtavi', 'vice city', 'lucia', 'leonida', 'rockstar', 'jason duval', 'grand theft'];
 const WORDS = /\bgta|gta ?(6|vi)\b|grand ?theft ?auto|vice ?city|lucia|leonida|rockstar|jason ?duval|hesoyam|los ?santos/i;
-const BAD = /anthropic|good ?to ?ape|\bscam\b|test/i;
+const BAD = /anthropic|good ?to ?ape|\bscam\b|\btest\b/i;
 function stf(x) { x = x || {}; return { pc: x.priceChange ?? null, vol: (x.buyVolume || 0) + (x.sellVolume || 0), bv: x.buyVolume || 0, sv: x.sellVolume || 0, buys: x.numBuys || 0, sells: x.numSells || 0, traders: x.numTraders || 0, net: x.numNetBuyers ?? null, org: x.numOrganicBuyers ?? null, hc: x.holderChange ?? null, lc: x.liquidityChange ?? null }; }
 function norm(t) { const s24 = t.stats24h || {}, s1 = t.stats1h || {};
   return { mint: t.id, name: t.name, symbol: t.symbol, icon: t.icon || null, launchpad: t.launchpad || null, mcap: t.mcap || 0, fdv: t.fdv || 0, price: t.usdPrice || 0, liq: t.liquidity || 0,
@@ -18,13 +20,15 @@ function quality(t) { const a = t.audit || {}; const name = `${t.name} ${t.symbo
   if (!WORDS.test(name) || BAD.test(name) || a.isSus) return false;
   if (mc < 15000 || h < 100 || liq < 3000) return false;
   if (liq > mc * .6 && h < 2000) return false;                       // a pool as big as the coin with no holders: fake liquidity
-  if (org < 25 && !(h >= 2000 && (s24.numTraders || 0) >= 200)) return false;   // no organic trading: botted or dead
+  if (org < 10 && h < 20000) return false;                            // no organic trading at all: botted
+  if (org < 25 && !(h >= 2000 && (s24.numTraders || 0) >= 200)) return false;   // little organic trading and a thin crowd: dead
   return true; }
 async function gtaCoins() { return cached('coins', 30000, async () => {
   const lists = await Promise.allSettled(QUERIES.map(q => getJSON(JUP + encodeURIComponent(q))));
   const seen = new Map();
   for (const l of lists) if (l.status === 'fulfilled' && Array.isArray(l.value)) for (const t of l.value) { if (!t || !t.id || seen.has(t.id) || !quality(t)) continue; seen.set(t.id, norm(t)); }
-  const out = [...seen.values()].sort((a, b) => b.mcap - a.mcap);
+  const all = [...seen.values()].sort((a, b) => b.mcap - a.mcap), big = new Map(), out = [];
+  for (const c of all) { const k = (c.symbol + '|' + c.name).toLowerCase().replace(/[^a-z0-9|$]/g, ''); const top = big.get(k); if (top && c.mcap < top * .25) continue; if (!top) big.set(k, c.mcap); out.push(c); }   // copies of a bigger coin with the same name
   return out.slice(0, 60); }); }
 async function tokensByMint(mints) { const out = {}; for (let i = 0; i < mints.length; i += 90) { const part = mints.slice(i, i + 90); const a = await getJSON(JUP + part.join(',')).catch(() => []); for (const t of a || []) out[t.id] = norm(t); } return out; }
 // ---- markets: every call is its own 24h prediction against the coin's market cap at the moment it was made
